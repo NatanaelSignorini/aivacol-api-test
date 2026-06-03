@@ -1,0 +1,70 @@
+services:
+  api:
+    container_name: aivacol_api
+    build:
+      context: .
+      target: development
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+      - 127.0.0.1:${PORT:-4000}:${PORT:-4000}
+    env_file:
+      - .env
+    environment:
+      DB_HOST: sqlserver
+      REDIS_HOST: redis
+    networks:
+      - backend
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  sqlserver:
+    container_name: aivacol_sqlserver
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
+    networks:
+      - backend
+    environment:
+      ACCEPT_EULA: 'Y'
+      MSSQL_SA_PASSWORD: ${DB_PASSWORD}
+      MSSQL_PID: Developer
+    ports:
+      - 127.0.0.1:${DB_PORT:-1433}:1433
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "SELECT 1" || exit 1',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  redis:
+    container_name: aivacol_redis
+    image: redis:7-alpine
+    networks:
+      - backend
+    ports:
+      - 127.0.0.1:${REDIS_PORT:-6379}:6379
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+networks:
+  backend:
+
+volumes:
+  sqlserver_data:
+  redis_data:
