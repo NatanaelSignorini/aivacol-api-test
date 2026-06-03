@@ -4,8 +4,8 @@ import { JwtService } from '@nestjs/jwt';
 import { AUTH_MESSAGE } from '../../common/constants/message.constants';
 import { passwordEncoder } from '../../common/decorators/password-encoder';
 import { UsersService } from '../users/users.service';
-import type { LoginResponseDto } from './dto/login-response.dto';
 import type { LoginInput } from './dto/login.input';
+import type { LoginResponseDto } from './dto/login-response.dto';
 import type { JwtPayload } from './interfaces/jwt-payload.interface';
 import { parseJwtDurationToSeconds } from './utils/parse-jwt-duration.util';
 
