@@ -1,9 +1,5 @@
-import type { EntityId } from '../../../common/types/entity-id.type';
+import { BaseResponseDto } from '../../bases/dto/base-response.dto';
 
-export class BrandResponseDto {
-  id!: EntityId;
+export class BrandResponseDto extends BaseResponseDto {
   name!: string;
-  createdAt!: Date;
-  updatedAt!: Date;
-  createdBy!: EntityId;
 }
