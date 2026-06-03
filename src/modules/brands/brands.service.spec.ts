@@ -1,0 +1,156 @@
+import { ConflictException, NotFoundException } from '@nestjs/common';
+import { Test, type TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import type { Repository } from 'typeorm';
+import { BrandsService } from './brands.service';
+import { Brand } from './entities/brand.entity';
+
+describe('BrandsService', () => {
+  let service: BrandsService;
+  let repository: jest.Mocked<
+    Pick<Repository<Brand>, 'create' | 'save' | 'find' | 'findOne' | 'remove'>
+  >;
+
+  const userId = '018f1234-5678-7890-abcd-ef1234567890';
+  const brandId = '018f1234-5678-7890-abcd-ef1234567891';
+
+  const existingBrand: Brand = {
+    id: brandId,
+    name: 'Toyota',
+    createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    createdBy: userId,
+    creator: undefined,
+    assignId: jest.fn(),
+  };
+
+  beforeEach(async () => {
+    repository = {
+      create: jest.fn(),
+      save: jest.fn(),
+      find: jest.fn(),
+      findOne: jest.fn(),
+      remove: jest.fn(),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        BrandsService,
+        {
+          provide: getRepositoryToken(Brand),
+          useValue: repository,
+        },
+      ],
+    }).compile();
+
+    service = module.get(BrandsService);
+    jest.clearAllMocks();
+  });
+
+  describe('create', () => {
+    it('creates brand with createdBy from authenticated user', async () => {
+      repository.findOne.mockResolvedValue(null);
+      repository.create.mockImplementation((data) =>
+        Object.assign(new Brand(), data),
+      );
+      repository.save.mockImplementation(async (brand) => ({
+        ...brand,
+        id: brandId,
+        createdAt: existingBrand.createdAt,
+        updatedAt: existingBrand.updatedAt,
+      }));
+
+      const result = await service.create({ name: 'Toyota' }, userId);
+
+      expect(repository.create).toHaveBeenCalledWith({
+        name: 'Toyota',
+        createdBy: userId,
+      });
+      expect(result).toEqual({
+        id: brandId,
+        name: 'Toyota',
+        createdAt: existingBrand.createdAt,
+        updatedAt: existingBrand.updatedAt,
+        createdBy: userId,
+      });
+    });
+
+    it('rejects duplicate name on create with ConflictException', async () => {
+      repository.findOne.mockResolvedValue(existingBrand);
+
+      await expect(service.create({ name: 'Toyota' }, userId)).rejects.toThrow(
+        ConflictException,
+      );
+    });
+  });
+
+  describe('findAll', () => {
+    it('returns all brands', async () => {
+      repository.find.mockResolvedValue([existingBrand]);
+
+      const result = await service.findAll();
+
+      expect(repository.find).toHaveBeenCalledWith({ order: { name: 'ASC' } });
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe('Toyota');
+    });
+  });
+
+  describe('findOne', () => {
+    it('returns brand by id', async () => {
+      repository.findOne.mockResolvedValue(existingBrand);
+
+      const result = await service.findOne(brandId);
+
+      expect(result.id).toBe(brandId);
+      expect(result.name).toBe('Toyota');
+    });
+
+    it('throws NotFoundException for missing id', async () => {
+      repository.findOne.mockResolvedValue(null);
+
+      await expect(service.findOne(brandId)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('update', () => {
+    it('updates brand name when unique', async () => {
+      repository.findOne
+        .mockResolvedValueOnce(existingBrand)
+        .mockResolvedValueOnce(null);
+      repository.save.mockImplementation(async (brand) => brand);
+
+      const result = await service.update(brandId, { name: 'Honda' });
+
+      expect(result.name).toBe('Honda');
+      expect(repository.save).toHaveBeenCalled();
+    });
+
+    it('rejects duplicate name on update with ConflictException', async () => {
+      const otherBrand: Brand = {
+        ...existingBrand,
+        id: '018f1234-5678-7890-abcd-ef1234567892',
+        name: 'Honda',
+      };
+
+      repository.findOne
+        .mockResolvedValueOnce(existingBrand)
+        .mockResolvedValueOnce(otherBrand);
+
+      await expect(service.update(brandId, { name: 'Honda' })).rejects.toThrow(
+        ConflictException,
+      );
+    });
+  });
+
+  describe('remove', () => {
+    it('removes brand by id', async () => {
+      repository.findOne.mockResolvedValue(existingBrand);
+      repository.remove.mockResolvedValue(existingBrand);
+
+      await service.remove(brandId);
+
+      expect(repository.remove).toHaveBeenCalledWith(existingBrand);
+    });
+  });
+});
