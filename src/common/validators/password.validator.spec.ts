@@ -2,7 +2,7 @@ import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { IsPasswordField, StrongPasswordValidator } from './password.validator';
 
-export const VALID_TEST_PASSWORD = 'Password1!';
+const VALID_TEST_PASSWORD = 'Password1!';
 
 class PasswordFieldHolder {
   @IsPasswordField()
