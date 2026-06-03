@@ -42,14 +42,17 @@
     "cache-manager-redis-yet": "5.1.5",
     "class-transformer": "0.5.1",
     "class-validator": "0.15.1",
+    "email-validator": "2.0.4",
     "keyv": "5.6.0",
     "mssql": "12.5.5",
     "passport": "0.7.0",
     "passport-jwt": "4.0.1",
+    "password-validator": "5.3.0",
     "redis": "6.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "typeorm": "1.0.0"
+    "typeorm": "1.0.0",
+    "uuid": "14.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.16",
@@ -86,6 +89,9 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "transformIgnorePatterns": [
+      "node_modules/(?!uuid/)"
+    ]
   }
 }

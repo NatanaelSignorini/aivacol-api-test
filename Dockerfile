@@ -22,6 +22,9 @@ FROM dependencies AS development
 
 RUN apk add --no-cache netcat-openbsd
 
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile --non-interactive
+
 COPY scripts/docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 

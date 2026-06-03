@@ -12,13 +12,21 @@ until nc -z "$DB_HOST" "$DB_PORT"; do
 done
 echo "SQL Server is up."
 
-echo "Ensuring database ${DB_DATABASE:-aivacol} exists..."
-node /usr/src/app/scripts/docker-init-db.js
-
 echo "Waiting for Redis at ${REDIS_HOST}:${REDIS_PORT}..."
 until nc -z "$REDIS_HOST" "$REDIS_PORT"; do
   sleep 1
 done
 echo "Redis is up."
+
+echo "Installing dependencies..."
+yarn install --frozen-lockfile --non-interactive
+
+if [ ! -d node_modules/email-validator ] || [ ! -d node_modules/password-validator ]; then
+  echo "Validator packages missing after install, retrying..."
+  yarn install --frozen-lockfile --non-interactive --force
+fi
+
+echo "Running database migrations..."
+yarn migration:run
 
 exec "$@"

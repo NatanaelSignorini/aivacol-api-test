@@ -1,15 +1,16 @@
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import appConfig from './config/app.config';
 import { cacheConfigFactory } from './config/cache.config';
 import { typeOrmConfigFactory } from './config/typeorm.config';
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
+import { RolesGuard } from './modules/auth/guards/roles.guard';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -28,13 +29,21 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
       useFactory: cacheConfigFactory,
     }),
     AuthModule,
+    UsersModule,
   ],
-  controllers: [AppController],
+  controllers: [],
   providers: [
-    AppService,
+    {
+      provide: APP_FILTER,
+      useClass: HttpExceptionFilter,
+    },
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
   ],
 })

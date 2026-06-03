@@ -1,40 +1,115 @@
 import type { INestApplication } from '@nestjs/common';
 import { Module, ValidationPipe } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import type { JwtModuleOptions } from '@nestjs/jwt';
+import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
 import { Test, type TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import type { App } from 'supertest/types';
-import { AppController } from '../src/app.controller';
-import { AppService } from '../src/app.service';
+import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import appConfig from '../src/config/app.config';
-import { AuthModule } from '../src/modules/auth/auth.module';
+import { AuthController } from '../src/modules/auth/auth.controller';
+import { AuthService } from '../src/modules/auth/auth.service';
 import { JwtAuthGuard } from '../src/modules/auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../src/modules/auth/guards/roles.guard';
+import { JwtStrategy } from '../src/modules/auth/jwt.strategy';
+import { UserRole } from '../src/modules/users/enums/user-role.enum';
+import { UsersService } from '../src/modules/users/users.service';
+import { RbacProbeController } from './rbac-probe.controller';
 
 process.env.JWT_SECRET ??= 'test-jwt-secret-key-for-testing-only-32-chars';
 
-@Module({
-  imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      load: [appConfig],
-    }),
-    AuthModule,
-  ],
-  controllers: [AppController],
-  providers: [
-    AppService,
-    {
-      provide: APP_GUARD,
-      useClass: JwtAuthGuard,
-    },
-  ],
-})
-class E2eAppModule {}
+const mockUser = {
+  id: '018f1234-5678-7890-abcd-ef1234567890',
+  nickname: 'aivacol',
+  name: 'Aivacol Admin',
+  email: 'admin@aivacol.com',
+  passwordHash: '$2a$10$hashedpassword',
+  role: UserRole.Admin,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  createdBy: '018f1234-5678-7890-abcd-ef1234567890',
+};
 
-export async function createTestApp(): Promise<INestApplication<App>> {
+const mockOperatorUser = {
+  id: '018f1234-5678-7890-abcd-ef1234567891',
+  nickname: 'operator',
+  name: 'Fleet Operator',
+  email: 'operator@aivacol.com',
+  passwordHash: '$2a$10$hashedpassword',
+  role: UserRole.Operator,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  createdBy: '018f1234-5678-7890-abcd-ef1234567890',
+};
+
+function createE2eAppModule(usersService: Partial<UsersService>) {
+  @Module({
+    imports: [
+      ConfigModule.forRoot({
+        isGlobal: true,
+        load: [appConfig],
+      }),
+      PassportModule.register({ defaultStrategy: 'jwt' }),
+      JwtModule.registerAsync({
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService): JwtModuleOptions => {
+          const secret = configService.get<string>('jwt.secret');
+          if (!secret) {
+            throw new Error('JWT_SECRET is not configured');
+          }
+
+          return {
+            secret,
+            signOptions: {
+              expiresIn: configService.get('jwt.expiresIn') ?? '1h',
+            },
+          };
+        },
+      }),
+    ],
+    controllers: [AuthController, RbacProbeController],
+    providers: [
+      AuthService,
+      JwtStrategy,
+      JwtAuthGuard,
+      RolesGuard,
+      {
+        provide: UsersService,
+        useValue: {
+          findByEmail: jest.fn(),
+          findByDocument: jest.fn(),
+          findById: jest.fn(),
+          ...usersService,
+        },
+      },
+      {
+        provide: APP_FILTER,
+        useClass: HttpExceptionFilter,
+      },
+      {
+        provide: APP_GUARD,
+        useClass: JwtAuthGuard,
+      },
+      {
+        provide: APP_GUARD,
+        useClass: RolesGuard,
+      },
+    ],
+  })
+  class E2eAppModule {}
+
+  return E2eAppModule;
+}
+
+export async function createTestApp(
+  usersServiceOverride?: Partial<UsersService>,
+): Promise<INestApplication<App>> {
   const moduleFixture: TestingModule = await Test.createTestingModule({
-    imports: [E2eAppModule],
+    imports: [createE2eAppModule(usersServiceOverride ?? {})],
   }).compile();
 
   const app = moduleFixture.createNestApplication();
@@ -50,4 +125,4 @@ export async function createTestApp(): Promise<INestApplication<App>> {
   return app;
 }
 
-export { request };
+export { mockOperatorUser, mockUser, request };
