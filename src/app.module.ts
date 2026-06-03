@@ -10,6 +10,7 @@ import { typeOrmConfigFactory } from './config/typeorm.config';
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
+import { BrandsModule } from './modules/brands/brands.module';
 import { UsersModule } from './modules/users/users.module';
 
 @Module({
@@ -30,6 +31,7 @@ import { UsersModule } from './modules/users/users.module';
     }),
     AuthModule,
     UsersModule,
+    BrandsModule,
   ],
   controllers: [],
   providers: [
