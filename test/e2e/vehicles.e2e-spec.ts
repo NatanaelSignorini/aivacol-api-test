@@ -29,7 +29,11 @@ import { Vehicle } from '../../src/modules/vehicles/entities/vehicle.entity';
 import { VehiclesController } from '../../src/modules/vehicles/vehicles.controller';
 import { VehiclesService } from '../../src/modules/vehicles/vehicles.service';
 import { itemFrom, nodesFrom } from '../common/api-response.util';
-import { mockOperatorUser, mockUser, request } from '../common/e2e/create-test-app';
+import {
+  mockOperatorUser,
+  mockUser,
+  request,
+} from '../common/e2e/create-test-app';
 import { createFindAndCount } from '../common/e2e/in-memory-repository.util';
 
 type ModelRecord = Model;

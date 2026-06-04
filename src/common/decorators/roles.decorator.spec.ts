@@ -13,9 +13,9 @@ describe('Roles decorator', () => {
       list(): void {}
     }
 
-    expect(Reflect.getMetadata(ROLES_KEY, TestController.prototype.list)).toEqual(
-      [UserRole.Admin, UserRole.Operator],
-    );
+    expect(
+      Reflect.getMetadata(ROLES_KEY, TestController.prototype.list),
+    ).toEqual([UserRole.Admin, UserRole.Operator]);
   });
 
   it('accepts a single role', () => {
@@ -24,8 +24,8 @@ describe('Roles decorator', () => {
       create(): void {}
     }
 
-    expect(Reflect.getMetadata(ROLES_KEY, TestController.prototype.create)).toEqual(
-      [UserRole.Admin],
-    );
+    expect(
+      Reflect.getMetadata(ROLES_KEY, TestController.prototype.create),
+    ).toEqual([UserRole.Admin]);
   });
 });

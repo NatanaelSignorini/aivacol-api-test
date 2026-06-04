@@ -44,7 +44,8 @@ module.exports = {
       displayName: 'integration',
       testMatch: ['<rootDir>/test/integration/**/*.integration-spec.ts'],
       globalSetup: '<rootDir>/test/common/integration/jest-global-setup.ts',
-      globalTeardown: '<rootDir>/test/common/integration/jest-global-teardown.ts',
+      globalTeardown:
+        '<rootDir>/test/common/integration/jest-global-teardown.ts',
       testTimeout: 120000,
       maxWorkers: 1,
     },

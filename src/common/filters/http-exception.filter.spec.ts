@@ -2,9 +2,9 @@ import {
   type ArgumentsHost,
   BadRequestException,
   HttpStatus,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpExceptionFilter } from './http-exception.filter';
 

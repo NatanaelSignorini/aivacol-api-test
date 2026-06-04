@@ -1,5 +1,5 @@
-import { validate as validateUuid } from 'uuid';
 import { getMetadataArgsStorage } from 'typeorm';
+import { validate as validateUuid } from 'uuid';
 import { isUuidV7 } from '../../../common/types/entity-id.type';
 import { Model } from '../../models/entities/model.entity';
 import { Vehicle } from './vehicle.entity';

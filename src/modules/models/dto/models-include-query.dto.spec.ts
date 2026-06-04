@@ -12,9 +12,15 @@ async function validateQuery(payload: object) {
 
 describe('ModelsIncludeQueryDto', () => {
   it('accepts boolean and string true/false for includeBrand', async () => {
-    await expect(validateQuery({ includeBrand: true })).resolves.toHaveLength(0);
-    await expect(validateQuery({ includeBrand: 'true' })).resolves.toHaveLength(0);
-    await expect(validateQuery({ includeBrand: 'false' })).resolves.toHaveLength(0);
+    await expect(validateQuery({ includeBrand: true })).resolves.toHaveLength(
+      0,
+    );
+    await expect(validateQuery({ includeBrand: 'true' })).resolves.toHaveLength(
+      0,
+    );
+    await expect(
+      validateQuery({ includeBrand: 'false' }),
+    ).resolves.toHaveLength(0);
   });
 
   it('treats empty or invalid values as undefined', async () => {

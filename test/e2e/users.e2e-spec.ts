@@ -21,7 +21,11 @@ import { UserRole } from '../../src/modules/users/enums/user-role.enum';
 import { UsersController } from '../../src/modules/users/users.controller';
 import { UsersService } from '../../src/modules/users/users.service';
 import { itemFrom, nodesFrom } from '../common/api-response.util';
-import { mockOperatorUser, mockUser, request } from '../common/e2e/create-test-app';
+import {
+  mockOperatorUser,
+  mockUser,
+  request,
+} from '../common/e2e/create-test-app';
 import { createFindAndCount } from '../common/e2e/in-memory-repository.util';
 
 type UserRecord = User;
