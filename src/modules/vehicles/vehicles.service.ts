@@ -7,8 +7,11 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { Cache } from 'cache-manager';
-import { Repository } from 'typeorm';
+import { type FindOptionsWhere, Like, Repository } from 'typeorm';
+import { DEFAULT_PAGE_SIZE } from '../../common/dto/pagination-query.dto';
+import type { Connection } from '../../common/interfaces/connection.interface';
 import type { EntityId } from '../../common/types/entity-id.type';
+import { toConnection } from '../../common/utils/api-response.util';
 import {
   normalizeChassis,
   normalizeLicensePlate,
@@ -19,6 +22,7 @@ import { Model } from '../models/entities/model.entity';
 import type { CreateVehicleInput } from './dto/create-vehicle.input';
 import type { UpdateVehicleInput } from './dto/update-vehicle.input';
 import { VehicleResponseDto } from './dto/vehicle-response.dto';
+import type { VehiclesListQueryDto } from './dto/vehicles-list-query.dto';
 import { Vehicle } from './entities/vehicle.entity';
 import {
   VEHICLES_LIST_CACHE_KEY,
@@ -73,24 +77,76 @@ export class VehiclesService {
     return response;
   }
 
-  async findAll(): Promise<VehicleResponseDto[]> {
-    const cached = await this.cacheManager.get<VehicleResponseDto[]>(
-      VEHICLES_LIST_CACHE_KEY,
-    );
+  async findAll(
+    query: VehiclesListQueryDto,
+  ): Promise<Connection<VehicleResponseDto>> {
+    if (this.canUseListCache(query)) {
+      const cached = await this.cacheManager.get<
+        Connection<VehicleResponseDto>
+      >(VEHICLES_LIST_CACHE_KEY);
 
-    if (cached) {
-      return cached;
+      if (cached) {
+        return cached;
+      }
     }
 
-    const vehicles = await this.vehiclesRepository.find({
+    const where = this.buildListWhere(query);
+    const [vehicles, totalCount] = await this.vehiclesRepository.findAndCount({
+      where,
       relations: { model: true },
       order: { licensePlate: 'ASC' },
+      skip: query.skip,
+      take: query.first,
     });
 
-    const response = vehicles.map((vehicle) => this.toResponse(vehicle));
-    await this.cacheManager.set(VEHICLES_LIST_CACHE_KEY, response);
+    const connection = toConnection(
+      vehicles.map((vehicle) => this.toResponse(vehicle)),
+      totalCount,
+      query.skip,
+    );
 
-    return response;
+    if (this.canUseListCache(query)) {
+      await this.cacheManager.set(VEHICLES_LIST_CACHE_KEY, connection);
+    }
+
+    return connection;
+  }
+
+  private canUseListCache(query: VehiclesListQueryDto): boolean {
+    return (
+      query.skip === 0 &&
+      query.first === DEFAULT_PAGE_SIZE &&
+      !query.licensePlate &&
+      !query.modelId &&
+      !query.brandId &&
+      query.year === undefined
+    );
+  }
+
+  private buildListWhere(
+    query: VehiclesListQueryDto,
+  ): FindOptionsWhere<Vehicle> {
+    const where: FindOptionsWhere<Vehicle> = {};
+
+    if (query.licensePlate) {
+      where.licensePlate = Like(
+        `%${normalizeLicensePlate(query.licensePlate)}%`,
+      );
+    }
+
+    if (query.modelId) {
+      where.modelId = query.modelId;
+    }
+
+    if (query.year !== undefined) {
+      where.year = query.year;
+    }
+
+    if (query.brandId) {
+      where.model = { brandId: query.brandId };
+    }
+
+    return where;
   }
 
   async findOne(id: EntityId): Promise<VehicleResponseDto> {

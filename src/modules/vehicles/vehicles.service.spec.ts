@@ -4,6 +4,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import type { Cache } from 'cache-manager';
 import type { Repository } from 'typeorm';
+import { DEFAULT_PAGE_SIZE } from '../../common/dto/pagination-query.dto';
 import { VehicleEventsPublisher } from '../messaging/publishers/vehicle-events.publisher';
 import { Model } from '../models/entities/model.entity';
 import { Vehicle } from './entities/vehicle.entity';
@@ -18,7 +19,13 @@ describe('VehiclesService', () => {
   let vehiclesRepository: jest.Mocked<
     Pick<
       Repository<Vehicle>,
-      'create' | 'save' | 'find' | 'findOne' | 'remove' | 'count'
+      | 'create'
+      | 'save'
+      | 'find'
+      | 'findAndCount'
+      | 'findOne'
+      | 'remove'
+      | 'count'
     >
   >;
   let modelsRepository: jest.Mocked<Pick<Repository<Model>, 'findOne'>>;
@@ -79,6 +86,7 @@ describe('VehiclesService', () => {
       create: jest.fn(),
       save: jest.fn(),
       find: jest.fn(),
+      findAndCount: jest.fn(),
       findOne: jest.fn(),
       remove: jest.fn(),
       count: jest.fn(),
@@ -215,31 +223,45 @@ describe('VehiclesService', () => {
   });
 
   describe('findAll', () => {
-    it('returns cached vehicles on cache hit', async () => {
-      cacheManager.get.mockResolvedValue([vehicleResponse]);
+    const defaultQuery = { first: DEFAULT_PAGE_SIZE, skip: 0 };
+    const cachedConnection = {
+      nodes: [vehicleResponse],
+      pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      totalCount: 1,
+    };
 
-      const result = await service.findAll();
+    it('returns cached vehicles on cache hit', async () => {
+      cacheManager.get.mockResolvedValue(cachedConnection);
+
+      const result = await service.findAll(defaultQuery);
 
       expect(cacheManager.get).toHaveBeenCalledWith(VEHICLES_LIST_CACHE_KEY);
-      expect(vehiclesRepository.find).not.toHaveBeenCalled();
-      expect(result).toEqual([vehicleResponse]);
+      expect(vehiclesRepository.findAndCount).not.toHaveBeenCalled();
+      expect(result).toEqual(cachedConnection);
     });
 
     it('returns all vehicles and caches on miss', async () => {
       cacheManager.get.mockResolvedValue(undefined);
-      vehiclesRepository.find.mockResolvedValue([existingVehicle]);
+      vehiclesRepository.findAndCount.mockResolvedValue([[existingVehicle], 1]);
 
-      const result = await service.findAll();
+      const result = await service.findAll(defaultQuery);
 
-      expect(vehiclesRepository.find).toHaveBeenCalledWith({
+      expect(vehiclesRepository.findAndCount).toHaveBeenCalledWith({
+        where: {},
         relations: { model: true },
         order: { licensePlate: 'ASC' },
+        skip: 0,
+        take: DEFAULT_PAGE_SIZE,
       });
-      expect(cacheManager.set).toHaveBeenCalledWith(VEHICLES_LIST_CACHE_KEY, [
-        vehicleResponse,
-      ]);
-      expect(result).toHaveLength(1);
-      expect(result[0].licensePlate).toBe('ABC1D23');
+      expect(cacheManager.set).toHaveBeenCalledWith(
+        VEHICLES_LIST_CACHE_KEY,
+        expect.objectContaining({
+          nodes: [vehicleResponse],
+          totalCount: 1,
+        }),
+      );
+      expect(result.nodes).toHaveLength(1);
+      expect(result.nodes[0].licensePlate).toBe('ABC1D23');
     });
   });
 

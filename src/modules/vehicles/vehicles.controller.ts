@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -20,6 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import type { ApiDataResponse } from '../../common/interfaces/connection.interface';
 import {
   ApiCreateErrorResponses,
   ApiDeleteErrorResponses,
@@ -28,12 +30,17 @@ import {
   ApiUpdateErrorResponses,
 } from '../../common/swagger/api-responses';
 import { UUID_V7_EXAMPLE } from '../../common/swagger/swagger.constants';
+import {
+  buildItemDataResponse,
+  buildListDataResponse,
+} from '../../common/utils/api-response.util';
 import { JWT_AUTH_SCHEME } from '../../config/swagger.config';
 import type { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
 import { UserRole } from '../users/enums/user-role.enum';
 import { CreateVehicleInput } from './dto/create-vehicle.input';
 import { UpdateVehicleInput } from './dto/update-vehicle.input';
 import { VehicleResponseDto } from './dto/vehicle-response.dto';
+import { VehiclesListQueryDto } from './dto/vehicles-list-query.dto';
 import { VehiclesService } from './vehicles.service';
 
 @ApiTags('Vehicles')
@@ -50,16 +57,20 @@ export class VehiclesController {
   create(
     @Body() input: CreateVehicleInput,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<VehicleResponseDto> {
-    return this.vehiclesService.create(input, user.id);
+  ): Promise<ApiDataResponse<'vehicle', VehicleResponseDto>> {
+    return this.vehiclesService
+      .create(input, user.id)
+      .then((vehicle) => buildItemDataResponse('vehicle', vehicle));
   }
 
   @Get()
-  @ApiOperation({ summary: 'List all vehicles' })
-  @ApiResponse({ status: 200, type: VehicleResponseDto, isArray: true })
+  @ApiOperation({ summary: 'List vehicles with filters' })
+  @ApiResponse({ status: 200, description: 'Paginated vehicles connection' })
   @ApiListErrorResponses({ resource: 'vehicles' })
-  findAll(): Promise<VehicleResponseDto[]> {
-    return this.vehiclesService.findAll();
+  findAll(@Query() query: VehiclesListQueryDto) {
+    return this.vehiclesService
+      .findAll(query)
+      .then((connection) => buildListDataResponse('vehicles', connection));
   }
 
   @Get(':id')
@@ -67,8 +78,12 @@ export class VehiclesController {
   @ApiParam({ name: 'id', format: 'uuid', example: UUID_V7_EXAMPLE })
   @ApiResponse({ status: 200, type: VehicleResponseDto })
   @ApiFindOneErrorResponses({ resource: 'vehicles' })
-  findOne(@Param('id', ParseUUIDPipe) id: string): Promise<VehicleResponseDto> {
-    return this.vehiclesService.findOne(id);
+  findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ApiDataResponse<'vehicle', VehicleResponseDto>> {
+    return this.vehiclesService
+      .findOne(id)
+      .then((vehicle) => buildItemDataResponse('vehicle', vehicle));
   }
 
   @Patch(':id')
@@ -79,8 +94,10 @@ export class VehiclesController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() input: UpdateVehicleInput,
-  ): Promise<VehicleResponseDto> {
-    return this.vehiclesService.update(id, input);
+  ): Promise<ApiDataResponse<'vehicle', VehicleResponseDto>> {
+    return this.vehiclesService
+      .update(id, input)
+      .then((vehicle) => buildItemDataResponse('vehicle', vehicle));
   }
 
   @Roles(UserRole.Admin)
