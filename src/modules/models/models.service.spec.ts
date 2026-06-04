@@ -112,13 +112,13 @@ describe('ModelsService', () => {
       expect(result).toMatchObject({
         id: modelId,
         name: 'Corolla',
-        brandId: null,
-        brandName: null,
-        createdBy: userId,
       });
+      expect(result.brand).toBeUndefined();
+      expect(result.createdAt).toEqual(existingModel.createdAt);
+      expect(result.createdBy).toBe(userId);
     });
 
-    it('creates model with valid brandId', async () => {
+    it('includes brand when requested', async () => {
       brandsRepository.findOne.mockResolvedValue(existingBrand);
       modelsRepository.create.mockImplementation((data) =>
         Object.assign(new Model(), data),
@@ -131,15 +131,23 @@ describe('ModelsService', () => {
       }));
       modelsRepository.findOne.mockResolvedValue(existingModel);
 
-      const result = await service.create({ name: 'Corolla', brandId }, userId);
+      const result = await service.create(
+        { name: 'Corolla', brandId },
+        userId,
+        { includeBrand: true },
+      );
 
-      expect(brandsRepository.findOne).toHaveBeenCalledWith({
-        where: { id: brandId },
-      });
       expect(result).toMatchObject({
         name: 'Corolla',
-        brandId,
-        brandName: 'Toyota',
+        createdAt: existingModel.createdAt,
+        createdBy: userId,
+        brand: {
+          id: brandId,
+          name: 'Toyota',
+          createdAt: existingBrand.createdAt,
+          updatedAt: existingBrand.updatedAt,
+          createdBy: userId,
+        },
       });
     });
 
@@ -153,21 +161,53 @@ describe('ModelsService', () => {
   });
 
   describe('findAll', () => {
-    it('returns paginated models', async () => {
+    it('returns paginated models without brand by default', async () => {
       modelsRepository.findAndCount.mockResolvedValue([[existingModel], 1]);
 
-      const result = await service.findAll({ first: DEFAULT_PAGE_SIZE, skip: 0 });
+      const result = await service.findAll({
+        first: DEFAULT_PAGE_SIZE,
+        skip: 0,
+      });
 
       expect(modelsRepository.findAndCount).toHaveBeenCalledWith({
         where: {},
-        relations: { brand: true },
+        relations: undefined,
         order: { name: 'ASC' },
         skip: 0,
         take: DEFAULT_PAGE_SIZE,
       });
       expect(result.nodes).toHaveLength(1);
       expect(result.nodes[0].name).toBe('Corolla');
-      expect(result.nodes[0].brandName).toBe('Toyota');
+      expect(result.nodes[0].brand).toBeUndefined();
+    });
+
+    it('loads brand relation when includeBrand is true', async () => {
+      modelsRepository.findAndCount.mockResolvedValue([[existingModel], 1]);
+
+      const result = await service.findAll({
+        first: DEFAULT_PAGE_SIZE,
+        skip: 0,
+        includeBrand: true,
+      });
+
+      expect(modelsRepository.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          relations: { brand: true },
+        }),
+      );
+      expect(result.nodes[0]).toMatchObject({
+        name: 'Corolla',
+        createdAt: existingModel.createdAt,
+        updatedAt: existingModel.updatedAt,
+        createdBy: userId,
+        brand: {
+          id: brandId,
+          name: 'Toyota',
+          createdAt: existingBrand.createdAt,
+          updatedAt: existingBrand.updatedAt,
+          createdBy: userId,
+        },
+      });
     });
   });
 
@@ -179,6 +219,7 @@ describe('ModelsService', () => {
 
       expect(result.id).toBe(modelId);
       expect(result.name).toBe('Corolla');
+      expect(result.brand).toBeUndefined();
     });
 
     it('throws NotFoundException for missing id', async () => {
@@ -207,14 +248,23 @@ describe('ModelsService', () => {
       brandsRepository.findOne.mockResolvedValue(updatedBrand);
       modelsRepository.save.mockImplementation(async (model) => model);
 
-      const result = await service.update(modelId, {
-        name: 'Civic',
-        brandId: updatedBrand.id,
-      });
+      const result = await service.update(
+        modelId,
+        {
+          name: 'Civic',
+          brandId: updatedBrand.id,
+        },
+        { includeBrand: true },
+      );
 
       expect(result.name).toBe('Civic');
-      expect(result.brandId).toBe(updatedBrand.id);
-      expect(result.brandName).toBe('Honda');
+      expect(result.brand).toEqual({
+        id: updatedBrand.id,
+        name: 'Honda',
+        createdAt: updatedBrand.createdAt,
+        updatedAt: updatedBrand.updatedAt,
+        createdBy: updatedBrand.createdBy,
+      });
     });
 
     it('rejects non-existent brandId on update with NotFoundException', async () => {

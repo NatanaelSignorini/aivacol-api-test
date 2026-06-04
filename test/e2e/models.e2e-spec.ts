@@ -353,10 +353,8 @@ describe('Models (e2e)', () => {
 
     expect(model).toMatchObject({
       name: 'Corolla',
-      brandId: null,
-      brandName: null,
-      createdBy: mockOperatorUser.id,
     });
+    expect(model.brand).toBeUndefined();
     expect(model.id).toEqual(expect.any(String));
   });
 
@@ -377,9 +375,8 @@ describe('Models (e2e)', () => {
 
     expect(itemFrom(response.body, 'model')).toMatchObject({
       name: 'Hilux',
-      brandId: itemFrom(brand.body, 'brand').id,
-      brandName: 'Toyota',
     });
+    expect(itemFrom(response.body, 'model').brand).toBeUndefined();
   });
 
   it('returns 404 for invalid brandId on create', async () => {
@@ -453,10 +450,22 @@ describe('Models (e2e)', () => {
       .send({ name: 'City', brandId: brandItem.id })
       .expect(200);
 
-    expect(itemFrom(updated.body, 'model')).toMatchObject({
+    const updatedModel = await request(app.getHttpServer())
+      .get(`/api/v1/models/${createdModel.id}`)
+      .query({ includeBrand: true })
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    expect(itemFrom(updated.body, 'model')).toMatchObject({ name: 'City' });
+    expect(itemFrom(updatedModel.body, 'model')).toMatchObject({
       name: 'City',
-      brandId: brandItem.id,
-      brandName: 'Honda',
+      brand: {
+        id: brandItem.id,
+        name: 'Honda',
+        createdAt: brandItem.createdAt,
+        updatedAt: brandItem.updatedAt,
+        createdBy: brandItem.createdBy,
+      },
     });
   });
 

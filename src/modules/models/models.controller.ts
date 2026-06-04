@@ -39,6 +39,7 @@ import type { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface
 import { UserRole } from '../users/enums/user-role.enum';
 import { CreateModelInput } from './dto/create-model.input';
 import { ModelResponseDto } from './dto/model-response.dto';
+import { ModelsIncludeQueryDto } from './dto/models-include-query.dto';
 import { ModelsListQueryDto } from './dto/models-list-query.dto';
 import { UpdateModelInput } from './dto/update-model.input';
 import { ModelsService } from './models.service';
@@ -56,10 +57,11 @@ export class ModelsController {
   @ApiCreateErrorResponses({ resource: 'models' })
   create(
     @Body() input: CreateModelInput,
+    @Query() includeQuery: ModelsIncludeQueryDto,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ApiDataResponse<'model', ModelResponseDto>> {
     return this.modelsService
-      .create(input, user.id)
+      .create(input, user.id, includeQuery)
       .then((model) => buildItemDataResponse('model', model));
   }
 
@@ -80,9 +82,10 @@ export class ModelsController {
   @ApiFindOneErrorResponses({ resource: 'models' })
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
+    @Query() includeQuery: ModelsIncludeQueryDto,
   ): Promise<ApiDataResponse<'model', ModelResponseDto>> {
     return this.modelsService
-      .findOne(id)
+      .findOne(id, includeQuery)
       .then((model) => buildItemDataResponse('model', model));
   }
 
@@ -94,9 +97,10 @@ export class ModelsController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() input: UpdateModelInput,
+    @Query() includeQuery: ModelsIncludeQueryDto,
   ): Promise<ApiDataResponse<'model', ModelResponseDto>> {
     return this.modelsService
-      .update(id, input)
+      .update(id, input, includeQuery)
       .then((model) => buildItemDataResponse('model', model));
   }
 

@@ -1,9 +1,10 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional, IntersectionType } from '@nestjs/swagger';
 import { IsOptional, IsString, IsUUID } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 import { UUID_V7_EXAMPLE } from '../../../common/swagger/swagger.constants';
+import { ModelsIncludeQueryDto } from './models-include-query.dto';
 
-export class ModelsListQueryDto extends PaginationQueryDto {
+class ModelsListFiltersDto {
   @ApiPropertyOptional({ example: 'Civic' })
   @IsOptional()
   @IsString()
@@ -14,3 +15,9 @@ export class ModelsListQueryDto extends PaginationQueryDto {
   @IsUUID('all')
   brandId?: string;
 }
+
+export class ModelsListQueryDto extends IntersectionType(
+  PaginationQueryDto,
+  ModelsIncludeQueryDto,
+  ModelsListFiltersDto,
+) {}
