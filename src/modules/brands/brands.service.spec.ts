@@ -2,13 +2,17 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import type { Repository } from 'typeorm';
+import { DEFAULT_PAGE_SIZE } from '../../common/dto/pagination-query.dto';
 import { BrandsService } from './brands.service';
 import { Brand } from './entities/brand.entity';
 
 describe('BrandsService', () => {
   let service: BrandsService;
   let repository: jest.Mocked<
-    Pick<Repository<Brand>, 'create' | 'save' | 'find' | 'findOne' | 'remove'>
+    Pick<
+      Repository<Brand>,
+      'create' | 'save' | 'find' | 'findAndCount' | 'findOne' | 'remove'
+    >
   >;
 
   const userId = '018f1234-5678-7890-abcd-ef1234567890';
@@ -29,6 +33,7 @@ describe('BrandsService', () => {
       create: jest.fn(),
       save: jest.fn(),
       find: jest.fn(),
+      findAndCount: jest.fn(),
       findOne: jest.fn(),
       remove: jest.fn(),
     };
@@ -85,14 +90,19 @@ describe('BrandsService', () => {
   });
 
   describe('findAll', () => {
-    it('returns all brands', async () => {
-      repository.find.mockResolvedValue([existingBrand]);
+    it('returns paginated brands', async () => {
+      repository.findAndCount.mockResolvedValue([[existingBrand], 1]);
 
-      const result = await service.findAll();
+      const result = await service.findAll({ first: DEFAULT_PAGE_SIZE, skip: 0 });
 
-      expect(repository.find).toHaveBeenCalledWith({ order: { name: 'ASC' } });
-      expect(result).toHaveLength(1);
-      expect(result[0].name).toBe('Toyota');
+      expect(repository.findAndCount).toHaveBeenCalledWith({
+        where: {},
+        order: { name: 'ASC' },
+        skip: 0,
+        take: DEFAULT_PAGE_SIZE,
+      });
+      expect(result.nodes).toHaveLength(1);
+      expect(result.nodes[0].name).toBe('Toyota');
     });
   });
 
