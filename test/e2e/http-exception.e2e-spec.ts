@@ -1,7 +1,12 @@
 import type { INestApplication } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
-import { AUTH_MESSAGE } from '../src/common/constants/message.constants';
-import { createTestApp, mockOperatorUser, mockUser, request } from './test-app';
+import { AUTH_MESSAGE } from '../../src/common/constants/message.constants';
+import {
+  createTestApp,
+  mockOperatorUser,
+  mockUser,
+  request,
+} from '../common/e2e-app';
 
 jest.mock('bcryptjs', () => ({
   compare: jest.fn(),
@@ -91,11 +96,11 @@ describe('HttpExceptionFilter (e2e)', () => {
     const token = await login(mockOperatorUser.email);
 
     const response = await request(app.getHttpServer())
-      .delete('/api/v1/rbac-probe/admin-only')
+      .get('/api/v1/users')
       .set('Authorization', `Bearer ${token}`)
       .expect(403);
 
-    expectErrorEnvelope(response.body, 403, '/api/v1/rbac-probe/admin-only');
+    expectErrorEnvelope(response.body, 403, '/api/v1/users');
     expect(response.body.message).toBe('Insufficient permissions');
   });
 });

@@ -1,6 +1,6 @@
 import type { INestApplication } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
-import { createTestApp, mockUser, request } from './test-app';
+import { createTestApp, mockUser, request } from '../common/e2e-app';
 
 jest.mock('bcryptjs', () => ({
   compare: jest.fn(),

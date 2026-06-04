@@ -10,22 +10,23 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import type { App } from 'supertest/types';
 import { v7 as uuidv7 } from 'uuid';
-import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
-import appConfig from '../src/config/app.config';
-import { AuthController } from '../src/modules/auth/auth.controller';
-import { AuthService } from '../src/modules/auth/auth.service';
-import { JwtAuthGuard } from '../src/modules/auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../src/modules/auth/guards/roles.guard';
-import { JwtStrategy } from '../src/modules/auth/jwt.strategy';
-import { Brand } from '../src/modules/brands/entities/brand.entity';
-import { Model } from '../src/modules/models/entities/model.entity';
-import { ModelsController } from '../src/modules/models/models.controller';
-import { ModelsService } from '../src/modules/models/models.service';
-import { UsersService } from '../src/modules/users/users.service';
-import { Vehicle } from '../src/modules/vehicles/entities/vehicle.entity';
-import { VehiclesController } from '../src/modules/vehicles/vehicles.controller';
-import { VehiclesService } from '../src/modules/vehicles/vehicles.service';
-import { mockOperatorUser, mockUser, request } from './test-app';
+import { HttpExceptionFilter } from '../../src/common/filters/http-exception.filter';
+import appConfig from '../../src/config/app.config';
+import { AuthController } from '../../src/modules/auth/auth.controller';
+import { AuthService } from '../../src/modules/auth/auth.service';
+import { JwtAuthGuard } from '../../src/modules/auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../src/modules/auth/guards/roles.guard';
+import { JwtStrategy } from '../../src/modules/auth/jwt.strategy';
+import { Brand } from '../../src/modules/brands/entities/brand.entity';
+import { VehicleEventsPublisher } from '../../src/modules/messaging/publishers/vehicle-events.publisher';
+import { Model } from '../../src/modules/models/entities/model.entity';
+import { ModelsController } from '../../src/modules/models/models.controller';
+import { ModelsService } from '../../src/modules/models/models.service';
+import { UsersService } from '../../src/modules/users/users.service';
+import { Vehicle } from '../../src/modules/vehicles/entities/vehicle.entity';
+import { VehiclesController } from '../../src/modules/vehicles/vehicles.controller';
+import { VehiclesService } from '../../src/modules/vehicles/vehicles.service';
+import { mockOperatorUser, mockUser, request } from '../common/e2e-app';
 
 type ModelRecord = Model;
 type VehicleRecord = Vehicle;
@@ -242,6 +243,14 @@ async function createVehiclesTestApp(): Promise<INestApplication<App>> {
           get: jest.fn(),
           set: jest.fn(),
           del: jest.fn(),
+        },
+      },
+      {
+        provide: VehicleEventsPublisher,
+        useValue: {
+          publishCreated: jest.fn(),
+          publishUpdated: jest.fn(),
+          publishDeleted: jest.fn(),
         },
       },
       {
