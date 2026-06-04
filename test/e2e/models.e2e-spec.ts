@@ -24,12 +24,14 @@ import { ModelsController } from '../../src/modules/models/models.controller';
 import { ModelsService } from '../../src/modules/models/models.service';
 import { UsersService } from '../../src/modules/users/users.service';
 import { VehiclesService } from '../../src/modules/vehicles/vehicles.service';
+import { itemFrom, nodesFrom } from '../common/api-response.util';
 import {
   createTestApp,
   mockOperatorUser,
   mockUser,
   request,
 } from '../common/e2e-app';
+import { createFindAndCount } from '../common/in-memory-repository.util';
 
 type BrandRecord = Brand;
 type ModelRecord = Model;
@@ -55,6 +57,10 @@ function createInMemoryBrandsRepository() {
     }),
     find: jest.fn(async () =>
       [...store.values()].sort((a, b) => a.name.localeCompare(b.name)),
+    ),
+    findAndCount: createFindAndCount(
+      () => [...store.values()],
+      (a, b) => a.name.localeCompare(b.name),
     ),
     findOne: jest.fn(async ({ where }: { where: Partial<BrandRecord> }) => {
       if (where.id) {
@@ -115,6 +121,48 @@ function createInMemoryModelsRepository(
       }
 
       return models;
+    }),
+    findAndCount: jest.fn(async (options) => {
+      const models = [...store.values()].sort((a, b) =>
+        a.name.localeCompare(b.name),
+      );
+
+      for (const model of models) {
+        if (model.brandId) {
+          model.brand =
+            (await brandsRepository.findOne({
+              where: { id: model.brandId },
+            })) ?? null;
+        } else {
+          model.brand = null;
+        }
+      }
+
+      let items = models;
+
+      if (options?.where?.name) {
+        const raw = options.where.name as { _value?: string } | string;
+        const pattern = String(
+          typeof raw === 'object' && raw !== null && '_value' in raw
+            ? raw._value
+            : raw,
+        ).replace(/%/g, '');
+        items = items.filter((model) =>
+          model.name.toLowerCase().includes(pattern.toLowerCase()),
+        );
+      }
+
+      if (options?.where?.brandId) {
+        items = items.filter(
+          (model) => model.brandId === options.where.brandId,
+        );
+      }
+
+      const totalCount = items.length;
+      const skip = options?.skip ?? 0;
+      const take = options?.take ?? items.length;
+
+      return [items.slice(skip, skip + take), totalCount];
     }),
     findOne: jest.fn(
       async ({
@@ -282,7 +330,7 @@ describe('Models (e2e)', () => {
       .send({ email, password: 'Password1!' })
       .expect(200);
 
-    return response.body.accessToken as string;
+    return itemFrom(response.body, 'login').accessToken;
   }
 
   it('returns 401 for unauthenticated create request', async () => {
@@ -301,13 +349,15 @@ describe('Models (e2e)', () => {
       .send({ name: 'Corolla' })
       .expect(201);
 
-    expect(response.body).toMatchObject({
+    const model = itemFrom(response.body, 'model');
+
+    expect(model).toMatchObject({
       name: 'Corolla',
       brandId: null,
       brandName: null,
       createdBy: mockOperatorUser.id,
     });
-    expect(response.body.id).toEqual(expect.any(String));
+    expect(model.id).toEqual(expect.any(String));
   });
 
   it('associates model to brand when brandId is provided', async () => {
@@ -322,12 +372,12 @@ describe('Models (e2e)', () => {
     const response = await request(app.getHttpServer())
       .post('/api/v1/models')
       .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'Hilux', brandId: brand.body.id })
+      .send({ name: 'Hilux', brandId: itemFrom(brand.body, 'brand').id })
       .expect(201);
 
-    expect(response.body).toMatchObject({
+    expect(itemFrom(response.body, 'model')).toMatchObject({
       name: 'Hilux',
-      brandId: brand.body.id,
+      brandId: itemFrom(brand.body, 'brand').id,
       brandName: 'Toyota',
     });
   });
@@ -367,16 +417,17 @@ describe('Models (e2e)', () => {
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(listResponse.body).toEqual(
+    expect(nodesFrom(listResponse.body, 'models')).toEqual(
       expect.arrayContaining([expect.objectContaining({ name: 'Civic' })]),
     );
 
+    const createdModel = itemFrom(created.body, 'model');
     const detailResponse = await request(app.getHttpServer())
-      .get(`/api/v1/models/${created.body.id}`)
+      .get(`/api/v1/models/${createdModel.id}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(detailResponse.body.name).toBe('Civic');
+    expect(itemFrom(detailResponse.body, 'model').name).toBe('Civic');
   });
 
   it('updates model name and brandId', async () => {
@@ -394,15 +445,17 @@ describe('Models (e2e)', () => {
       .send({ name: 'Fit' })
       .expect(201);
 
+    const createdModel = itemFrom(created.body, 'model');
+    const brandItem = itemFrom(brand.body, 'brand');
     const updated = await request(app.getHttpServer())
-      .patch(`/api/v1/models/${created.body.id}`)
+      .patch(`/api/v1/models/${createdModel.id}`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'City', brandId: brand.body.id })
+      .send({ name: 'City', brandId: brandItem.id })
       .expect(200);
 
-    expect(updated.body).toMatchObject({
+    expect(itemFrom(updated.body, 'model')).toMatchObject({
       name: 'City',
-      brandId: brand.body.id,
+      brandId: brandItem.id,
       brandName: 'Honda',
     });
   });
@@ -419,7 +472,7 @@ describe('Models (e2e)', () => {
     const operatorToken = await login(mockOperatorUser.email);
 
     await request(app.getHttpServer())
-      .delete(`/api/v1/models/${created.body.id}`)
+      .delete(`/api/v1/models/${itemFrom(created.body, 'model').id}`)
       .set('Authorization', `Bearer ${operatorToken}`)
       .expect(403);
   });
@@ -433,13 +486,15 @@ describe('Models (e2e)', () => {
       .send({ name: 'Disposable' })
       .expect(201);
 
+    const createdModel = itemFrom(created.body, 'model');
+
     await request(app.getHttpServer())
-      .delete(`/api/v1/models/${created.body.id}`)
+      .delete(`/api/v1/models/${createdModel.id}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(204);
 
     await request(app.getHttpServer())
-      .get(`/api/v1/models/${created.body.id}`)
+      .get(`/api/v1/models/${createdModel.id}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(404);
   });

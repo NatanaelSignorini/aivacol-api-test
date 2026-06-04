@@ -20,7 +20,9 @@ import { User } from '../../src/modules/users/entities/user.entity';
 import { UserRole } from '../../src/modules/users/enums/user-role.enum';
 import { UsersController } from '../../src/modules/users/users.controller';
 import { UsersService } from '../../src/modules/users/users.service';
+import { itemFrom, nodesFrom } from '../common/api-response.util';
 import { mockOperatorUser, mockUser, request } from '../common/e2e-app';
+import { createFindAndCount } from '../common/in-memory-repository.util';
 
 type UserRecord = User;
 
@@ -45,6 +47,10 @@ function createInMemoryUsersRepository() {
     }),
     find: jest.fn(async () =>
       [...store.values()].sort((a, b) => a.nickname.localeCompare(b.nickname)),
+    ),
+    findAndCount: createFindAndCount(
+      () => [...store.values()],
+      (a, b) => a.nickname.localeCompare(b.nickname),
     ),
     findOne: jest.fn(async ({ where }: { where: Partial<UserRecord> }) => {
       if (where.id) {
@@ -174,14 +180,14 @@ describe('Users (e2e)', () => {
       .send({ email, password: 'Password1!' })
       .expect(200);
 
-    return response.body.accessToken as string;
+    return itemFrom(response.body, 'login').accessToken;
   }
 
   it('returns 401 for unauthenticated list request', async () => {
     await request(app.getHttpServer()).get('/api/v1/users').expect(401);
   });
 
-  it('returns 403 for operator on all users routes', async () => {
+  it('returns 403 for operator on admin-only users routes', async () => {
     const token = await login(mockOperatorUser.email);
 
     await request(app.getHttpServer())
@@ -202,6 +208,36 @@ describe('Users (e2e)', () => {
       .expect(403);
   });
 
+  it('returns current user profile for admin and operator on GET /users/me', async () => {
+    const adminToken = await login(mockUser.email);
+    const adminResponse = await request(app.getHttpServer())
+      .get('/api/v1/users/me')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+
+    expect(itemFrom(adminResponse.body, 'user')).toMatchObject({
+      id: mockUser.id,
+      email: mockUser.email,
+      role: UserRole.Admin,
+    });
+
+    const operatorToken = await login(mockOperatorUser.email);
+    const operatorResponse = await request(app.getHttpServer())
+      .get('/api/v1/users/me')
+      .set('Authorization', `Bearer ${operatorToken}`)
+      .expect(200);
+
+    expect(itemFrom(operatorResponse.body, 'user')).toMatchObject({
+      id: mockOperatorUser.id,
+      email: mockOperatorUser.email,
+      role: UserRole.Operator,
+    });
+  });
+
+  it('returns 401 for unauthenticated GET /users/me', async () => {
+    await request(app.getHttpServer()).get('/api/v1/users/me').expect(401);
+  });
+
   it('admin creates, lists, retrieves, updates and deletes user', async () => {
     const token = await login(mockUser.email);
 
@@ -217,48 +253,59 @@ describe('Users (e2e)', () => {
       })
       .expect(201);
 
-    expect(created.body).toMatchObject({
+    const createdUser = itemFrom(created.body, 'user');
+
+    expect(createdUser).toMatchObject({
       nickname: 'fleetop2',
       email: 'fleetop2@aivacol.com',
       role: UserRole.Operator,
       createdBy: mockUser.id,
     });
-    expect(created.body).not.toHaveProperty('passwordHash');
-    expect(created.body).not.toHaveProperty('password');
+    expect(createdUser).not.toHaveProperty('passwordHash');
+    expect(createdUser).not.toHaveProperty('password');
 
     const listResponse = await request(app.getHttpServer())
       .get('/api/v1/users')
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(listResponse.body).toEqual(
+    expect(nodesFrom(listResponse.body, 'users')).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ nickname: 'fleetop2' }),
       ]),
     );
+    expect(listResponse.body.data.users).toMatchObject({
+      pageInfo: {
+        hasNextPage: expect.any(Boolean),
+        hasPreviousPage: false,
+      },
+      totalCount: expect.any(Number),
+    });
 
     const detailResponse = await request(app.getHttpServer())
-      .get(`/api/v1/users/${created.body.id}`)
+      .get(`/api/v1/users/${createdUser.id}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(detailResponse.body.name).toBe('Fleet Operator Two');
+    expect(itemFrom(detailResponse.body, 'user').name).toBe(
+      'Fleet Operator Two',
+    );
 
     const updated = await request(app.getHttpServer())
-      .patch(`/api/v1/users/${created.body.id}`)
+      .patch(`/api/v1/users/${createdUser.id}`)
       .set('Authorization', `Bearer ${token}`)
       .send({ name: 'Fleet Operator Updated' })
       .expect(200);
 
-    expect(updated.body.name).toBe('Fleet Operator Updated');
+    expect(itemFrom(updated.body, 'user').name).toBe('Fleet Operator Updated');
 
     await request(app.getHttpServer())
-      .delete(`/api/v1/users/${created.body.id}`)
+      .delete(`/api/v1/users/${createdUser.id}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(204);
 
     await request(app.getHttpServer())
-      .get(`/api/v1/users/${created.body.id}`)
+      .get(`/api/v1/users/${createdUser.id}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(404);
   });

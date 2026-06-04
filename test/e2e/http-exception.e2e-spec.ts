@@ -1,6 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { AUTH_MESSAGE } from '../../src/common/constants/message.constants';
+import { itemFrom } from '../common/api-response.util';
 import {
   createTestApp,
   mockOperatorUser,
@@ -63,7 +64,7 @@ describe('HttpExceptionFilter (e2e)', () => {
       .send({ email, password: 'Password1!' })
       .expect(200);
 
-    return response.body.accessToken as string;
+    return itemFrom(response.body, 'login').accessToken;
   }
 
   it('returns standardized envelope on 401 login failure', async () => {

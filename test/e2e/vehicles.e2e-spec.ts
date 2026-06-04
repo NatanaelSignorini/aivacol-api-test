@@ -26,7 +26,9 @@ import { UsersService } from '../../src/modules/users/users.service';
 import { Vehicle } from '../../src/modules/vehicles/entities/vehicle.entity';
 import { VehiclesController } from '../../src/modules/vehicles/vehicles.controller';
 import { VehiclesService } from '../../src/modules/vehicles/vehicles.service';
+import { itemFrom, nodesFrom } from '../common/api-response.util';
 import { mockOperatorUser, mockUser, request } from '../common/e2e-app';
+import { createFindAndCount } from '../common/in-memory-repository.util';
 
 type ModelRecord = Model;
 type VehicleRecord = Vehicle;
@@ -62,6 +64,10 @@ function createInMemoryModelsRepository() {
     }),
     find: jest.fn(async () =>
       [...store.values()].sort((a, b) => a.name.localeCompare(b.name)),
+    ),
+    findAndCount: createFindAndCount(
+      () => [...store.values()],
+      (a, b) => a.name.localeCompare(b.name),
     ),
     findOne: jest.fn(async ({ where }: { where: Partial<ModelRecord> }) => {
       if (where.id) {
@@ -112,6 +118,48 @@ function createInMemoryVehiclesRepository(
       }
 
       return vehicles;
+    }),
+    findAndCount: jest.fn(async (options) => {
+      const vehicles = [...store.values()].sort((a, b) =>
+        a.licensePlate.localeCompare(b.licensePlate),
+      );
+
+      for (const vehicle of vehicles) {
+        vehicle.model =
+          (await modelsRepository.findOne({
+            where: { id: vehicle.modelId },
+          })) ?? undefined;
+      }
+
+      let items = vehicles;
+
+      if (options?.where?.licensePlate) {
+        const raw = options.where.licensePlate as { _value?: string } | string;
+        const pattern = String(
+          typeof raw === 'object' && raw !== null && '_value' in raw
+            ? raw._value
+            : raw,
+        ).replace(/%/g, '');
+        items = items.filter((vehicle) =>
+          vehicle.licensePlate.toLowerCase().includes(pattern.toLowerCase()),
+        );
+      }
+
+      if (options?.where?.modelId) {
+        items = items.filter(
+          (vehicle) => vehicle.modelId === options.where.modelId,
+        );
+      }
+
+      if (options?.where?.year !== undefined) {
+        items = items.filter((vehicle) => vehicle.year === options.where.year);
+      }
+
+      const totalCount = items.length;
+      const skip = options?.skip ?? 0;
+      const take = options?.take ?? items.length;
+
+      return [items.slice(skip, skip + take), totalCount];
     }),
     findOne: jest.fn(
       async ({
@@ -307,7 +355,7 @@ describe('Vehicles (e2e)', () => {
       .send({ email, password: 'Password1!' })
       .expect(200);
 
-    return response.body.accessToken as string;
+    return itemFrom(response.body, 'login').accessToken;
   }
 
   async function createModel(token: string, name = 'Corolla'): Promise<string> {
@@ -317,7 +365,7 @@ describe('Vehicles (e2e)', () => {
       .send({ name })
       .expect(201);
 
-    return response.body.id as string;
+    return itemFrom(response.body, 'model').id;
   }
 
   it('returns 401 for unauthenticated create request', async () => {
@@ -349,7 +397,9 @@ describe('Vehicles (e2e)', () => {
       })
       .expect(201);
 
-    expect(response.body).toMatchObject({
+    const vehicle = itemFrom(response.body, 'vehicle');
+
+    expect(vehicle).toMatchObject({
       licensePlate: 'ABC1D23',
       chassis: '9BWZZZ377VT004251',
       renavam: '12345678901',
@@ -358,7 +408,7 @@ describe('Vehicles (e2e)', () => {
       modelName: 'Corolla',
       createdBy: mockOperatorUser.id,
     });
-    expect(response.body.id).toEqual(expect.any(String));
+    expect(vehicle.id).toEqual(expect.any(String));
   });
 
   it('returns 404 for invalid modelId on create', async () => {
@@ -433,18 +483,21 @@ describe('Vehicles (e2e)', () => {
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(listResponse.body).toEqual(
+    expect(nodesFrom(listResponse.body, 'vehicles')).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ licensePlate: 'XYZ9A87' }),
       ]),
     );
 
+    const createdVehicle = itemFrom(created.body, 'vehicle');
     const detailResponse = await request(app.getHttpServer())
-      .get(`/api/v1/vehicles/${created.body.id}`)
+      .get(`/api/v1/vehicles/${createdVehicle.id}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(detailResponse.body.licensePlate).toBe('XYZ9A87');
+    expect(itemFrom(detailResponse.body, 'vehicle').licensePlate).toBe(
+      'XYZ9A87',
+    );
   });
 
   it('updates vehicle year', async () => {
@@ -463,13 +516,14 @@ describe('Vehicles (e2e)', () => {
       })
       .expect(201);
 
+    const createdVehicle = itemFrom(created.body, 'vehicle');
     const updated = await request(app.getHttpServer())
-      .patch(`/api/v1/vehicles/${created.body.id}`)
+      .patch(`/api/v1/vehicles/${createdVehicle.id}`)
       .set('Authorization', `Bearer ${token}`)
       .send({ year: 2021 })
       .expect(200);
 
-    expect(updated.body.year).toBe(2021);
+    expect(itemFrom(updated.body, 'vehicle').year).toBe(2021);
   });
 
   it('returns 403 for operator on DELETE vehicle', async () => {
@@ -491,7 +545,7 @@ describe('Vehicles (e2e)', () => {
     const operatorToken = await login(mockOperatorUser.email);
 
     await request(app.getHttpServer())
-      .delete(`/api/v1/vehicles/${created.body.id}`)
+      .delete(`/api/v1/vehicles/${itemFrom(created.body, 'vehicle').id}`)
       .set('Authorization', `Bearer ${operatorToken}`)
       .expect(403);
   });
@@ -512,13 +566,15 @@ describe('Vehicles (e2e)', () => {
       })
       .expect(201);
 
+    const createdVehicle = itemFrom(created.body, 'vehicle');
+
     await request(app.getHttpServer())
-      .delete(`/api/v1/vehicles/${created.body.id}`)
+      .delete(`/api/v1/vehicles/${createdVehicle.id}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(204);
 
     await request(app.getHttpServer())
-      .get(`/api/v1/vehicles/${created.body.id}`)
+      .get(`/api/v1/vehicles/${createdVehicle.id}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(404);
   });

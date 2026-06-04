@@ -20,12 +20,14 @@ import { BrandsController } from '../../src/modules/brands/brands.controller';
 import { BrandsService } from '../../src/modules/brands/brands.service';
 import { Brand } from '../../src/modules/brands/entities/brand.entity';
 import { UsersService } from '../../src/modules/users/users.service';
+import { itemFrom, nodesFrom } from '../common/api-response.util';
 import {
   createTestApp,
   mockOperatorUser,
   mockUser,
   request,
 } from '../common/e2e-app';
+import { createFindAndCount } from '../common/in-memory-repository.util';
 
 type BrandRecord = Brand;
 
@@ -50,6 +52,10 @@ function createInMemoryBrandsRepository() {
     }),
     find: jest.fn(async () =>
       [...store.values()].sort((a, b) => a.name.localeCompare(b.name)),
+    ),
+    findAndCount: createFindAndCount(
+      () => [...store.values()],
+      (a, b) => a.name.localeCompare(b.name),
     ),
     findOne: jest.fn(async ({ where }: { where: Partial<BrandRecord> }) => {
       if (where.id) {
@@ -188,7 +194,7 @@ describe('Brands (e2e)', () => {
       .send({ email, password: 'Password1!' })
       .expect(200);
 
-    return response.body.accessToken as string;
+    return itemFrom(response.body, 'login').accessToken;
   }
 
   it('returns 401 for unauthenticated create request', async () => {
@@ -207,11 +213,13 @@ describe('Brands (e2e)', () => {
       .send({ name: 'Toyota' })
       .expect(201);
 
-    expect(response.body).toMatchObject({
+    const brand = itemFrom(response.body, 'brand');
+
+    expect(brand).toMatchObject({
       name: 'Toyota',
       createdBy: mockOperatorUser.id,
     });
-    expect(response.body.id).toEqual(expect.any(String));
+    expect(brand.id).toEqual(expect.any(String));
   });
 
   it('lists and retrieves brands', async () => {
@@ -228,16 +236,17 @@ describe('Brands (e2e)', () => {
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(listResponse.body).toEqual(
+    expect(nodesFrom(listResponse.body, 'brands')).toEqual(
       expect.arrayContaining([expect.objectContaining({ name: 'Honda' })]),
     );
 
+    const createdBrand = itemFrom(created.body, 'brand');
     const detailResponse = await request(app.getHttpServer())
-      .get(`/api/v1/brands/${created.body.id}`)
+      .get(`/api/v1/brands/${createdBrand.id}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(detailResponse.body.name).toBe('Honda');
+    expect(itemFrom(detailResponse.body, 'brand').name).toBe('Honda');
   });
 
   it('updates brand name', async () => {
@@ -249,13 +258,14 @@ describe('Brands (e2e)', () => {
       .send({ name: 'Ford' })
       .expect(201);
 
+    const createdBrand = itemFrom(created.body, 'brand');
     const updated = await request(app.getHttpServer())
-      .patch(`/api/v1/brands/${created.body.id}`)
+      .patch(`/api/v1/brands/${createdBrand.id}`)
       .set('Authorization', `Bearer ${token}`)
       .send({ name: 'Ford Motor' })
       .expect(200);
 
-    expect(updated.body.name).toBe('Ford Motor');
+    expect(itemFrom(updated.body, 'brand').name).toBe('Ford Motor');
   });
 
   it('returns 403 for operator on DELETE', async () => {
@@ -270,7 +280,7 @@ describe('Brands (e2e)', () => {
     const operatorToken = await login(mockOperatorUser.email);
 
     await request(app.getHttpServer())
-      .delete(`/api/v1/brands/${created.body.id}`)
+      .delete(`/api/v1/brands/${itemFrom(created.body, 'brand').id}`)
       .set('Authorization', `Bearer ${operatorToken}`)
       .expect(403);
   });
@@ -284,13 +294,15 @@ describe('Brands (e2e)', () => {
       .send({ name: 'Fiat' })
       .expect(201);
 
+    const createdBrand = itemFrom(created.body, 'brand');
+
     await request(app.getHttpServer())
-      .delete(`/api/v1/brands/${created.body.id}`)
+      .delete(`/api/v1/brands/${createdBrand.id}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(204);
 
     await request(app.getHttpServer())
-      .get(`/api/v1/brands/${created.body.id}`)
+      .get(`/api/v1/brands/${createdBrand.id}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(404);
   });

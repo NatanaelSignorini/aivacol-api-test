@@ -1,5 +1,6 @@
 import type { INestApplication } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
+import { itemFrom } from '../common/api-response.util';
 import { createTestApp, mockUser, request } from '../common/e2e-app';
 
 jest.mock('bcryptjs', () => ({
@@ -38,8 +39,10 @@ describe('Auth (e2e)', () => {
       })
       .expect(200);
 
-    expect(response.body.accessToken).toEqual(expect.any(String));
-    expect(response.body.accessToken.length).toBeGreaterThan(0);
+    const login = itemFrom(response.body, 'login');
+
+    expect(login.accessToken).toEqual(expect.any(String));
+    expect(login.accessToken.length).toBeGreaterThan(0);
   });
 
   it('returns 401 for invalid credentials', async () => {
@@ -76,10 +79,15 @@ describe('Auth (e2e)', () => {
 
     const response = await request(app.getHttpServer())
       .post('/api/v1/auth/logout')
-      .set('Authorization', `Bearer ${loginResponse.body.accessToken}`)
+      .set(
+        'Authorization',
+        `Bearer ${itemFrom(loginResponse.body, 'login').accessToken}`,
+      )
       .expect(200);
 
-    expect(response.body).toEqual({ message: 'Logout successful' });
+    expect(itemFrom(response.body, 'logout')).toEqual({
+      message: 'Logout successful',
+    });
   });
 
   it('returns 401 on logout without token', async () => {
