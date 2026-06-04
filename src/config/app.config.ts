@@ -1,39 +1,39 @@
-import { env } from './env.config';
+import { ConfigEnvKeys } from '../common/config/config-env-keys';
 
 /** Mapeia variáveis de ambiente tipadas para o namespace do ConfigService NestJS. */
 export default () => ({
-  nodeEnv: env.NODE_ENV,
-  port: env.PORT,
-  apiPrefix: env.API_PREFIX,
+  nodeEnv: ConfigEnvKeys.nodeEnv(),
+  port: ConfigEnvKeys.port(),
+  apiPrefix: ConfigEnvKeys.apiPrefix(),
   jwt: {
-    secret: env.JWT_SECRET,
-    expiresIn: env.JWT_EXPIRES_IN,
+    secret: ConfigEnvKeys.jwtSecret(),
+    expiresIn: ConfigEnvKeys.jwtExpiresIn(),
   },
   redis: {
-    host: env.REDIS_HOST,
-    port: env.REDIS_PORT,
-    cacheTtl: env.REDIS_CACHE_TTL,
+    host: ConfigEnvKeys.redisHost(),
+    port: ConfigEnvKeys.redisPort(),
+    cacheTtl: ConfigEnvKeys.redisCacheTtl(),
   },
   swagger: {
-    path: env.SWAGGER_PATH,
+    path: ConfigEnvKeys.swaggerPath(),
   },
   cors: {
-    origins: env.CORS_ORIGINS,
+    origins: ConfigEnvKeys.corsOrigins(),
   },
   throttle: {
-    ttl: env.THROTTLE_TTL,
-    limit: env.THROTTLE_LIMIT,
-    loginTtl: env.THROTTLE_LOGIN_TTL,
-    loginLimit: env.THROTTLE_LOGIN_LIMIT,
+    ttl: ConfigEnvKeys.throttleTtl(),
+    limit: ConfigEnvKeys.throttleLimit(),
+    loginTtl: ConfigEnvKeys.throttleLoginTtl(),
+    loginLimit: ConfigEnvKeys.throttleLoginLimit(),
   },
   rabbitmq: {
-    enabled: env.RABBITMQ_ENABLED,
-    url: env.RABBITMQ_URL,
-    exchange: env.RABBITMQ_EXCHANGE,
+    enabled: ConfigEnvKeys.rabbitmqEnabled(),
+    url: ConfigEnvKeys.rabbitmqUrl(),
+    exchange: ConfigEnvKeys.rabbitmqExchange(),
   },
   mongodb: {
-    enabled: env.MONGODB_ENABLED,
-    uri: env.MONGODB_URI,
-    database: env.MONGODB_DATABASE,
+    enabled: ConfigEnvKeys.mongodbEnabled(),
+    uri: ConfigEnvKeys.mongodbUri(),
+    database: ConfigEnvKeys.mongodbDatabase(),
   },
 });

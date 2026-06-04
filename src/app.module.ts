@@ -6,6 +6,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import appConfig from './config/app.config';
+import { validateEnvironment } from './config/env-validation.config';
 import { cacheConfigFactory } from './config/cache.config';
 import { typeOrmConfigFactory } from './config/typeorm.config';
 import { AuditModule } from './modules/audit/audit.module';
@@ -21,7 +22,13 @@ import { VehiclesModule } from './modules/vehicles/vehicles.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      ignoreEnvFile: true,
+      envFilePath: ['.env'],
+      expandVariables: true,
+      validate: validateEnvironment,
+      validationOptions: {
+        allowUnknown: true,
+        abortEarly: true,
+      },
       load: [appConfig],
     }),
     ThrottlerModule.forRootAsync({

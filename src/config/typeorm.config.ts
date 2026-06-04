@@ -3,12 +3,12 @@ import {
   buildDatabaseEnvConfig,
   buildDataSourceOptions,
 } from './database.config';
-import { env } from './env.config';
+import { ConfigEnvKeys } from '../common/config/config-env-keys';
 
 /** Factory do TypeOrmModule com retry, autoLoadEntities e logging em development. */
 export const typeOrmConfigFactory = (): TypeOrmModuleOptions => {
   const db = buildDatabaseEnvConfig();
-  const isDevelopment = env.NODE_ENV === 'development';
+  const isDevelopment = ConfigEnvKeys.nodeEnv() === 'development';
 
   return {
     ...buildDataSourceOptions(db),

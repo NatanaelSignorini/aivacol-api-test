@@ -8,6 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../../common/decorators/public.decorator';
+import { ConfigEnvKeys } from '../../common/config/config-env-keys';
 import type { ApiDataResponse } from '../../common/interfaces/connection.interface';
 import {
   ERROR_RESPONSE_EXAMPLES,
@@ -28,8 +29,8 @@ export class AuthController {
   @Public()
   @Throttle({
     default: {
-      limit: Number(process.env.THROTTLE_LOGIN_LIMIT ?? 5),
-      ttl: Number(process.env.THROTTLE_LOGIN_TTL ?? 60000),
+      limit: ConfigEnvKeys.throttleLoginLimit(),
+      ttl: ConfigEnvKeys.throttleLoginTtl(),
     },
   })
   @Post('login')

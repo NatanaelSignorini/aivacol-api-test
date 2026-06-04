@@ -1,5 +1,5 @@
 import type { SqlServerDataSourceOptions } from 'typeorm/driver/sqlserver/SqlServerDataSourceOptions';
-import { env } from './env.config';
+import { ConfigEnvKeys } from '../common/config/config-env-keys';
 
 export interface DatabaseEnvConfig {
   host: string;
@@ -11,15 +11,15 @@ export interface DatabaseEnvConfig {
   trustServerCertificate: boolean;
 }
 
-/** Lê credenciais e opções TLS do SQL Server a partir de `env`. */
+/** Lê credenciais e opções TLS do SQL Server a partir das variáveis de ambiente. */
 export const buildDatabaseEnvConfig = (): DatabaseEnvConfig => ({
-  host: env.DB_HOST,
-  port: env.DB_PORT,
-  username: env.DB_USERNAME,
-  password: env.DB_PASSWORD,
-  database: env.DB_DATABASE,
-  encrypt: env.DB_ENCRYPT,
-  trustServerCertificate: env.DB_TRUST_SERVER_CERTIFICATE,
+  host: ConfigEnvKeys.dbHost(),
+  port: ConfigEnvKeys.dbPort(),
+  username: ConfigEnvKeys.dbUsername(),
+  password: ConfigEnvKeys.dbPassword(),
+  database: ConfigEnvKeys.dbDatabase(),
+  encrypt: ConfigEnvKeys.dbEncrypt(),
+  trustServerCertificate: ConfigEnvKeys.dbTrustServerCertificate(),
 });
 
 type MssqlDataSourceExtras = Partial<

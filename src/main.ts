@@ -3,13 +3,10 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
-import { validateEnvironment } from './config/env.config';
 import { setupSwagger } from './config/swagger.config';
 
-/** Inicializa a API: valida env, configura segurança HTTP, pipes, prefixo e Swagger. */
+/** Inicializa a API: configura segurança HTTP, pipes, prefixo e Swagger. */
 async function bootstrap() {
-  validateEnvironment(process.env as Record<string, unknown>);
-
   const app = await NestFactory.create(AppModule);
 
   const configService = app.get(ConfigService);
