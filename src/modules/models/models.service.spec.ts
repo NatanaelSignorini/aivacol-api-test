@@ -2,6 +2,7 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import type { Repository } from 'typeorm';
+import { DEFAULT_PAGE_SIZE } from '../../common/dto/pagination-query.dto';
 import { Brand } from '../brands/entities/brand.entity';
 import { VehiclesService } from '../vehicles/vehicles.service';
 import { Model } from './entities/model.entity';
@@ -10,7 +11,10 @@ import { ModelsService } from './models.service';
 describe('ModelsService', () => {
   let service: ModelsService;
   let modelsRepository: jest.Mocked<
-    Pick<Repository<Model>, 'create' | 'save' | 'find' | 'findOne' | 'remove'>
+    Pick<
+      Repository<Model>,
+      'create' | 'save' | 'find' | 'findAndCount' | 'findOne' | 'remove'
+    >
   >;
   let brandsRepository: jest.Mocked<Pick<Repository<Brand>, 'findOne'>>;
   let vehiclesService: jest.Mocked<Pick<VehiclesService, 'countByModelId'>>;
@@ -46,6 +50,7 @@ describe('ModelsService', () => {
       create: jest.fn(),
       save: jest.fn(),
       find: jest.fn(),
+      findAndCount: jest.fn(),
       findOne: jest.fn(),
       remove: jest.fn(),
     };
@@ -148,18 +153,21 @@ describe('ModelsService', () => {
   });
 
   describe('findAll', () => {
-    it('returns all models', async () => {
-      modelsRepository.find.mockResolvedValue([existingModel]);
+    it('returns paginated models', async () => {
+      modelsRepository.findAndCount.mockResolvedValue([[existingModel], 1]);
 
-      const result = await service.findAll();
+      const result = await service.findAll({ first: DEFAULT_PAGE_SIZE, skip: 0 });
 
-      expect(modelsRepository.find).toHaveBeenCalledWith({
+      expect(modelsRepository.findAndCount).toHaveBeenCalledWith({
+        where: {},
         relations: { brand: true },
         order: { name: 'ASC' },
+        skip: 0,
+        take: DEFAULT_PAGE_SIZE,
       });
-      expect(result).toHaveLength(1);
-      expect(result[0].name).toBe('Corolla');
-      expect(result[0].brandName).toBe('Toyota');
+      expect(result.nodes).toHaveLength(1);
+      expect(result.nodes[0].name).toBe('Corolla');
+      expect(result.nodes[0].brandName).toBe('Toyota');
     });
   });
 

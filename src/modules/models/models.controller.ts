@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -20,6 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import type { ApiDataResponse } from '../../common/interfaces/connection.interface';
 import {
   ApiCreateErrorResponses,
   ApiDeleteErrorResponses,
@@ -28,11 +30,16 @@ import {
   ApiUpdateErrorResponses,
 } from '../../common/swagger/api-responses';
 import { UUID_V7_EXAMPLE } from '../../common/swagger/swagger.constants';
+import {
+  buildItemDataResponse,
+  buildListDataResponse,
+} from '../../common/utils/api-response.util';
 import { JWT_AUTH_SCHEME } from '../../config/swagger.config';
 import type { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
 import { UserRole } from '../users/enums/user-role.enum';
 import { CreateModelInput } from './dto/create-model.input';
 import { ModelResponseDto } from './dto/model-response.dto';
+import { ModelsListQueryDto } from './dto/models-list-query.dto';
 import { UpdateModelInput } from './dto/update-model.input';
 import { ModelsService } from './models.service';
 
@@ -50,16 +57,20 @@ export class ModelsController {
   create(
     @Body() input: CreateModelInput,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<ModelResponseDto> {
-    return this.modelsService.create(input, user.id);
+  ): Promise<ApiDataResponse<'model', ModelResponseDto>> {
+    return this.modelsService
+      .create(input, user.id)
+      .then((model) => buildItemDataResponse('model', model));
   }
 
   @Get()
-  @ApiOperation({ summary: 'List all models' })
-  @ApiResponse({ status: 200, type: ModelResponseDto, isArray: true })
+  @ApiOperation({ summary: 'List models with filters' })
+  @ApiResponse({ status: 200, description: 'Paginated models connection' })
   @ApiListErrorResponses({ resource: 'models' })
-  findAll(): Promise<ModelResponseDto[]> {
-    return this.modelsService.findAll();
+  findAll(@Query() query: ModelsListQueryDto) {
+    return this.modelsService
+      .findAll(query)
+      .then((connection) => buildListDataResponse('models', connection));
   }
 
   @Get(':id')
@@ -67,8 +78,12 @@ export class ModelsController {
   @ApiParam({ name: 'id', format: 'uuid', example: UUID_V7_EXAMPLE })
   @ApiResponse({ status: 200, type: ModelResponseDto })
   @ApiFindOneErrorResponses({ resource: 'models' })
-  findOne(@Param('id', ParseUUIDPipe) id: string): Promise<ModelResponseDto> {
-    return this.modelsService.findOne(id);
+  findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ApiDataResponse<'model', ModelResponseDto>> {
+    return this.modelsService
+      .findOne(id)
+      .then((model) => buildItemDataResponse('model', model));
   }
 
   @Patch(':id')
@@ -79,8 +94,10 @@ export class ModelsController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() input: UpdateModelInput,
-  ): Promise<ModelResponseDto> {
-    return this.modelsService.update(id, input);
+  ): Promise<ApiDataResponse<'model', ModelResponseDto>> {
+    return this.modelsService
+      .update(id, input)
+      .then((model) => buildItemDataResponse('model', model));
   }
 
   @Roles(UserRole.Admin)

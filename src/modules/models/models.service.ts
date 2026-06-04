@@ -4,12 +4,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { type FindOptionsWhere, Like, Repository } from 'typeorm';
+import type { Connection } from '../../common/interfaces/connection.interface';
 import type { EntityId } from '../../common/types/entity-id.type';
+import { toConnection } from '../../common/utils/api-response.util';
 import { Brand } from '../brands/entities/brand.entity';
 import { VehiclesService } from '../vehicles/vehicles.service';
 import type { CreateModelInput } from './dto/create-model.input';
 import { ModelResponseDto } from './dto/model-response.dto';
+import type { ModelsListQueryDto } from './dto/models-list-query.dto';
 import type { UpdateModelInput } from './dto/update-model.input';
 import { Model } from './entities/model.entity';
 
@@ -41,13 +44,32 @@ export class ModelsService {
     return this.toResponse(await this.findEntityWithBrandOrFail(saved.id));
   }
 
-  async findAll(): Promise<ModelResponseDto[]> {
-    const models = await this.modelsRepository.find({
+  async findAll(
+    query: ModelsListQueryDto,
+  ): Promise<Connection<ModelResponseDto>> {
+    const where: FindOptionsWhere<Model> = {};
+
+    if (query.name) {
+      where.name = Like(`%${query.name.trim()}%`);
+    }
+
+    if (query.brandId) {
+      where.brandId = query.brandId;
+    }
+
+    const [models, totalCount] = await this.modelsRepository.findAndCount({
+      where,
       relations: { brand: true },
       order: { name: 'ASC' },
+      skip: query.skip,
+      take: query.first,
     });
 
-    return models.map((model) => this.toResponse(model));
+    return toConnection(
+      models.map((model) => this.toResponse(model)),
+      totalCount,
+      query.skip,
+    );
   }
 
   async findOne(id: EntityId): Promise<ModelResponseDto> {
