@@ -1,0 +1,515 @@
+[
+  {
+  "info": {
+    "_postman_id": "aivacol-fleet-api",
+    "name": "Aivacol API — Gestão de Frota",
+    "description": "Coleção + environment **Local** embutidos neste arquivo.\n\nPastas: Auth, Users, Brands, Models, Vehicles.\n\n1. Importe só este JSON (cria coleção e environment)\n2. Selecione environment **Aivacol API — Local**\n3. **Auth → POST /auth/login** (salva o token)\n4. Brands → Models → Vehicles para popular IDs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000/api/v1"
+    },
+    {
+      "key": "swaggerUrl",
+      "value": "http://localhost:4000/api/docs"
+    },
+    {
+      "key": "adminEmail",
+      "value": "admin@aivacol.com"
+    },
+    {
+      "key": "adminPassword",
+      "value": "Aivacol123!"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "brandId",
+      "value": ""
+    },
+    {
+      "key": "modelId",
+      "value": ""
+    },
+    {
+      "key": "vehicleId",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /auth/login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  pm.environment.set('accessToken', body.accessToken);",
+                  "  pm.collectionVariables.set('accessToken', body.accessToken);",
+                  "  pm.test('accessToken salvo', () => {",
+                  "    pm.expect(body.accessToken).to.be.a('string').and.not.empty;",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Autentica com email e senha. Grava `accessToken` no environment."
+          }
+        },
+        {
+          "name": "POST /auth/logout",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/logout",
+            "description": "Encerra sessão no servidor. Descarte o token no cliente após sucesso."
+          }
+        }
+      ],
+      "description": "Login é público; logout exige JWT."
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "POST /users",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const { id } = pm.response.json();",
+                  "  pm.environment.set('userId', id);",
+                  "  pm.collectionVariables.set('userId', id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nickname\": \"jdoe\",\n  \"name\": \"John Doe\",\n  \"email\": \"john.doe@aivacol.com\",\n  \"password\": \"SecurePass@2026\",\n  \"role\": \"operator\"\n}"
+            },
+            "url": "{{baseUrl}}/users"
+          }
+        },
+        {
+          "name": "GET /users",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/users"
+          }
+        },
+        {
+          "name": "GET /users/:id",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/users/{{userId}}"
+          }
+        },
+        {
+          "name": "PATCH /users/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe Updated\"\n}"
+            },
+            "url": "{{baseUrl}}/users/{{userId}}"
+          }
+        },
+        {
+          "name": "DELETE /users/:id",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/users/{{userId}}",
+            "description": "Não é possível remover o próprio usuário autenticado."
+          }
+        }
+      ],
+      "description": "Todas as rotas exigem role **admin** no JWT."
+    },
+    {
+      "name": "Brands",
+      "item": [
+        {
+          "name": "POST /brands",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const { id } = pm.response.json();",
+                  "  pm.environment.set('brandId', id);",
+                  "  pm.collectionVariables.set('brandId', id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Toyota\"\n}"
+            },
+            "url": "{{baseUrl}}/brands"
+          }
+        },
+        {
+          "name": "GET /brands",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/brands"
+          }
+        },
+        {
+          "name": "GET /brands/:id",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/brands/{{brandId}}"
+          }
+        },
+        {
+          "name": "PATCH /brands/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Toyota Motor\"\n}"
+            },
+            "url": "{{baseUrl}}/brands/{{brandId}}"
+          }
+        },
+        {
+          "name": "DELETE /brands/:id",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/brands/{{brandId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Models",
+      "item": [
+        {
+          "name": "POST /models",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const { id } = pm.response.json();",
+                  "  pm.environment.set('modelId', id);",
+                  "  pm.collectionVariables.set('modelId', id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Corolla\",\n  \"brandId\": \"{{brandId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/models",
+            "description": "Execute POST /brands antes ou informe `brandId` manualmente."
+          }
+        },
+        {
+          "name": "POST /models (sem marca)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Modelo Genérico\"\n}"
+            },
+            "url": "{{baseUrl}}/models"
+          }
+        },
+        {
+          "name": "GET /models",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/models"
+          }
+        },
+        {
+          "name": "GET /models/:id",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/models/{{modelId}}"
+          }
+        },
+        {
+          "name": "PATCH /models/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Corolla XEi\"\n}"
+            },
+            "url": "{{baseUrl}}/models/{{modelId}}"
+          }
+        },
+        {
+          "name": "PATCH /models/:id (desassociar marca)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"brandId\": null\n}"
+            },
+            "url": "{{baseUrl}}/models/{{modelId}}"
+          }
+        },
+        {
+          "name": "DELETE /models/:id",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/models/{{modelId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vehicles",
+      "item": [
+        {
+          "name": "POST /vehicles",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const { id } = pm.response.json();",
+                  "  pm.environment.set('vehicleId', id);",
+                  "  pm.collectionVariables.set('vehicleId', id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"licensePlate\": \"ABC1D23\",\n  \"chassis\": \"9BWZZZ377VT004251\",\n  \"renavam\": \"12345678901\",\n  \"year\": 2024,\n  \"modelId\": \"{{modelId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/vehicles",
+            "description": "Requer `modelId` válido (crie um Model antes)."
+          }
+        },
+        {
+          "name": "GET /vehicles",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/vehicles",
+            "description": "Primeira chamada popula Redis; repita para observar cache hit."
+          }
+        },
+        {
+          "name": "GET /vehicles/:id",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/vehicles/{{vehicleId}}"
+          }
+        },
+        {
+          "name": "PATCH /vehicles/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"year\": 2025\n}"
+            },
+            "url": "{{baseUrl}}/vehicles/{{vehicleId}}",
+            "description": "Invalida entradas de cache de veículos."
+          }
+        },
+        {
+          "name": "DELETE /vehicles/:id",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/vehicles/{{vehicleId}}"
+          }
+        }
+      ],
+      "description": "GET list/id usam cache Redis; POST/PATCH/DELETE invalidam o cache."
+    }
+  ]
+  },
+  {
+    "id": "aivacol-local-env",
+    "name": "Aivacol API — Local",
+    "values": [
+      {
+        "key": "baseUrl",
+        "value": "http://localhost:4000/api/v1",
+        "type": "default",
+        "enabled": true
+      },
+      {
+        "key": "swaggerUrl",
+        "value": "http://localhost:4000/api/docs",
+        "type": "default",
+        "enabled": true
+      },
+      {
+        "key": "adminEmail",
+        "value": "admin@aivacol.com",
+        "type": "default",
+        "enabled": true
+      },
+      {
+        "key": "adminPassword",
+        "value": "Aivacol123!",
+        "type": "secret",
+        "enabled": true
+      },
+      {
+        "key": "accessToken",
+        "value": "",
+        "type": "secret",
+        "enabled": true
+      },
+      {
+        "key": "brandId",
+        "value": "",
+        "type": "default",
+        "enabled": true
+      },
+      {
+        "key": "modelId",
+        "value": "",
+        "type": "default",
+        "enabled": true
+      },
+      {
+        "key": "vehicleId",
+        "value": "",
+        "type": "default",
+        "enabled": true
+      },
+      {
+        "key": "userId",
+        "value": "",
+        "type": "default",
+        "enabled": true
+      }
+    ],
+    "_postman_variable_scope": "environment"
+  }
+]

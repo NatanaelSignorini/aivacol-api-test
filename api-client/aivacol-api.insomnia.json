@@ -1,0 +1,454 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-06-04T00:15:53.230Z",
+  "__export_source": "aivacol-api-test",
+  "resources": [
+    {
+      "_id": "wrk_aivacol_fleet",
+      "_type": "workspace",
+      "name": "Aivacol API — Gestão de Frota",
+      "description": "Coleção + environment **Local** embutidos. Pastas: Auth, Users, Brands, Models, Vehicles. Rode POST /auth/login.",
+      "metaSortKey": -1
+    },
+    {
+      "_id": "jar_aivacol_default",
+      "_type": "cookie_jar",
+      "name": "Default Jar",
+      "parentId": "wrk_aivacol_fleet",
+      "cookies": [],
+      "metaSortKey": -1
+    },
+    {
+      "_id": "env_aivacol_local",
+      "_type": "environment",
+      "name": "Aivacol API — Local",
+      "parentId": "wrk_aivacol_fleet",
+      "color": "#0f766e",
+      "isPrivate": false,
+      "data": {
+        "baseUrl": "http://localhost:4000/api/v1",
+        "swaggerUrl": "http://localhost:4000/api/docs",
+        "adminEmail": "admin@aivacol.com",
+        "adminPassword": "Aivacol123!",
+        "accessToken": "",
+        "brandId": "",
+        "modelId": "",
+        "vehicleId": "",
+        "userId": ""
+      },
+      "metaSortKey": -1
+    },
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "name": "Auth",
+      "parentId": "wrk_aivacol_fleet",
+      "metaSortKey": 0,
+      "description": "Login é público; logout exige JWT."
+    },
+    {
+      "_id": "req_fld_auth_0",
+      "_type": "request",
+      "name": "POST /auth/login",
+      "parentId": "fld_auth",
+      "method": "POST",
+      "url": "{{ baseUrl }}/auth/login",
+      "description": "Autentica com email e senha. Grava `accessToken` no environment.",
+      "metaSortKey": 0,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"{{ adminEmail }}\",\n  \"password\": \"{{ adminPassword }}\"\n}"
+      },
+      "authentication": {
+        "type": "none"
+      }
+    },
+    {
+      "_id": "req_fld_auth_1",
+      "_type": "request",
+      "name": "POST /auth/logout",
+      "parentId": "fld_auth",
+      "method": "POST",
+      "url": "{{ baseUrl }}/auth/logout",
+      "description": "Encerra sessão no servidor. Descarte o token no cliente após sucesso.",
+      "metaSortKey": 1,
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ accessToken }}"
+      }
+    },
+    {
+      "_id": "fld_users",
+      "_type": "request_group",
+      "name": "Users",
+      "parentId": "wrk_aivacol_fleet",
+      "metaSortKey": 1,
+      "description": "Todas as rotas exigem role **admin** no JWT.",
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ accessToken }}"
+      }
+    },
+    {
+      "_id": "req_fld_users_0",
+      "_type": "request",
+      "name": "POST /users",
+      "parentId": "fld_users",
+      "method": "POST",
+      "url": "{{ baseUrl }}/users",
+      "description": "",
+      "metaSortKey": 0,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nickname\": \"jdoe\",\n  \"name\": \"John Doe\",\n  \"email\": \"john.doe@aivacol.com\",\n  \"password\": \"SecurePass@2026\",\n  \"role\": \"operator\"\n}"
+      }
+    },
+    {
+      "_id": "req_fld_users_1",
+      "_type": "request",
+      "name": "GET /users",
+      "parentId": "fld_users",
+      "method": "GET",
+      "url": "{{ baseUrl }}/users",
+      "description": "",
+      "metaSortKey": 1
+    },
+    {
+      "_id": "req_fld_users_2",
+      "_type": "request",
+      "name": "GET /users/:id",
+      "parentId": "fld_users",
+      "method": "GET",
+      "url": "{{ baseUrl }}/users/{{ userId }}",
+      "description": "",
+      "metaSortKey": 2
+    },
+    {
+      "_id": "req_fld_users_3",
+      "_type": "request",
+      "name": "PATCH /users/:id",
+      "parentId": "fld_users",
+      "method": "PATCH",
+      "url": "{{ baseUrl }}/users/{{ userId }}",
+      "description": "",
+      "metaSortKey": 3,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"John Doe Updated\"\n}"
+      }
+    },
+    {
+      "_id": "req_fld_users_4",
+      "_type": "request",
+      "name": "DELETE /users/:id",
+      "parentId": "fld_users",
+      "method": "DELETE",
+      "url": "{{ baseUrl }}/users/{{ userId }}",
+      "description": "Não é possível remover o próprio usuário autenticado.",
+      "metaSortKey": 4
+    },
+    {
+      "_id": "fld_brands",
+      "_type": "request_group",
+      "name": "Brands",
+      "parentId": "wrk_aivacol_fleet",
+      "metaSortKey": 2,
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ accessToken }}"
+      }
+    },
+    {
+      "_id": "req_fld_brands_0",
+      "_type": "request",
+      "name": "POST /brands",
+      "parentId": "fld_brands",
+      "method": "POST",
+      "url": "{{ baseUrl }}/brands",
+      "description": "",
+      "metaSortKey": 0,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Toyota\"\n}"
+      }
+    },
+    {
+      "_id": "req_fld_brands_1",
+      "_type": "request",
+      "name": "GET /brands",
+      "parentId": "fld_brands",
+      "method": "GET",
+      "url": "{{ baseUrl }}/brands",
+      "description": "",
+      "metaSortKey": 1
+    },
+    {
+      "_id": "req_fld_brands_2",
+      "_type": "request",
+      "name": "GET /brands/:id",
+      "parentId": "fld_brands",
+      "method": "GET",
+      "url": "{{ baseUrl }}/brands/{{ brandId }}",
+      "description": "",
+      "metaSortKey": 2
+    },
+    {
+      "_id": "req_fld_brands_3",
+      "_type": "request",
+      "name": "PATCH /brands/:id",
+      "parentId": "fld_brands",
+      "method": "PATCH",
+      "url": "{{ baseUrl }}/brands/{{ brandId }}",
+      "description": "",
+      "metaSortKey": 3,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Toyota Motor\"\n}"
+      }
+    },
+    {
+      "_id": "req_fld_brands_4",
+      "_type": "request",
+      "name": "DELETE /brands/:id",
+      "parentId": "fld_brands",
+      "method": "DELETE",
+      "url": "{{ baseUrl }}/brands/{{ brandId }}",
+      "description": "",
+      "metaSortKey": 4
+    },
+    {
+      "_id": "fld_models",
+      "_type": "request_group",
+      "name": "Models",
+      "parentId": "wrk_aivacol_fleet",
+      "metaSortKey": 3,
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ accessToken }}"
+      }
+    },
+    {
+      "_id": "req_fld_models_0",
+      "_type": "request",
+      "name": "POST /models",
+      "parentId": "fld_models",
+      "method": "POST",
+      "url": "{{ baseUrl }}/models",
+      "description": "Execute POST /brands antes ou informe `brandId` manualmente.",
+      "metaSortKey": 0,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Corolla\",\n  \"brandId\": \"{{ brandId }}\"\n}"
+      }
+    },
+    {
+      "_id": "req_fld_models_1",
+      "_type": "request",
+      "name": "POST /models (sem marca)",
+      "parentId": "fld_models",
+      "method": "POST",
+      "url": "{{ baseUrl }}/models",
+      "description": "",
+      "metaSortKey": 1,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Modelo Genérico\"\n}"
+      }
+    },
+    {
+      "_id": "req_fld_models_2",
+      "_type": "request",
+      "name": "GET /models",
+      "parentId": "fld_models",
+      "method": "GET",
+      "url": "{{ baseUrl }}/models",
+      "description": "",
+      "metaSortKey": 2
+    },
+    {
+      "_id": "req_fld_models_3",
+      "_type": "request",
+      "name": "GET /models/:id",
+      "parentId": "fld_models",
+      "method": "GET",
+      "url": "{{ baseUrl }}/models/{{ modelId }}",
+      "description": "",
+      "metaSortKey": 3
+    },
+    {
+      "_id": "req_fld_models_4",
+      "_type": "request",
+      "name": "PATCH /models/:id",
+      "parentId": "fld_models",
+      "method": "PATCH",
+      "url": "{{ baseUrl }}/models/{{ modelId }}",
+      "description": "",
+      "metaSortKey": 4,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Corolla XEi\"\n}"
+      }
+    },
+    {
+      "_id": "req_fld_models_5",
+      "_type": "request",
+      "name": "PATCH /models/:id (desassociar marca)",
+      "parentId": "fld_models",
+      "method": "PATCH",
+      "url": "{{ baseUrl }}/models/{{ modelId }}",
+      "description": "",
+      "metaSortKey": 5,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"brandId\": null\n}"
+      }
+    },
+    {
+      "_id": "req_fld_models_6",
+      "_type": "request",
+      "name": "DELETE /models/:id",
+      "parentId": "fld_models",
+      "method": "DELETE",
+      "url": "{{ baseUrl }}/models/{{ modelId }}",
+      "description": "",
+      "metaSortKey": 6
+    },
+    {
+      "_id": "fld_vehicles",
+      "_type": "request_group",
+      "name": "Vehicles",
+      "parentId": "wrk_aivacol_fleet",
+      "metaSortKey": 4,
+      "description": "GET list/id usam cache Redis; POST/PATCH/DELETE invalidam o cache.",
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ accessToken }}"
+      }
+    },
+    {
+      "_id": "req_fld_vehicles_0",
+      "_type": "request",
+      "name": "POST /vehicles",
+      "parentId": "fld_vehicles",
+      "method": "POST",
+      "url": "{{ baseUrl }}/vehicles",
+      "description": "Requer `modelId` válido (crie um Model antes).",
+      "metaSortKey": 0,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"licensePlate\": \"ABC1D23\",\n  \"chassis\": \"9BWZZZ377VT004251\",\n  \"renavam\": \"12345678901\",\n  \"year\": 2024,\n  \"modelId\": \"{{ modelId }}\"\n}"
+      }
+    },
+    {
+      "_id": "req_fld_vehicles_1",
+      "_type": "request",
+      "name": "GET /vehicles",
+      "parentId": "fld_vehicles",
+      "method": "GET",
+      "url": "{{ baseUrl }}/vehicles",
+      "description": "Primeira chamada popula Redis; repita para observar cache hit.",
+      "metaSortKey": 1
+    },
+    {
+      "_id": "req_fld_vehicles_2",
+      "_type": "request",
+      "name": "GET /vehicles/:id",
+      "parentId": "fld_vehicles",
+      "method": "GET",
+      "url": "{{ baseUrl }}/vehicles/{{ vehicleId }}",
+      "description": "",
+      "metaSortKey": 2
+    },
+    {
+      "_id": "req_fld_vehicles_3",
+      "_type": "request",
+      "name": "PATCH /vehicles/:id",
+      "parentId": "fld_vehicles",
+      "method": "PATCH",
+      "url": "{{ baseUrl }}/vehicles/{{ vehicleId }}",
+      "description": "Invalida entradas de cache de veículos.",
+      "metaSortKey": 3,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"year\": 2025\n}"
+      }
+    },
+    {
+      "_id": "req_fld_vehicles_4",
+      "_type": "request",
+      "name": "DELETE /vehicles/:id",
+      "parentId": "fld_vehicles",
+      "method": "DELETE",
+      "url": "{{ baseUrl }}/vehicles/{{ vehicleId }}",
+      "description": "",
+      "metaSortKey": 4
+    }
+  ]
+}
