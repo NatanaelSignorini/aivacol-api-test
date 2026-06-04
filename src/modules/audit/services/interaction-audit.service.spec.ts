@@ -4,6 +4,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { MongoClient } from 'mongodb';
 import { UserRole } from '../../users/enums/user-role.enum';
 import { INTERACTION_AUDIT_COLLECTION } from '../constants/audit.constants';
+import { InteractionAuditPublisher } from '../publishers/interaction-audit.publisher';
 import { InteractionAuditService } from './interaction-audit.service';
 
 jest.mock('mongodb');
@@ -12,10 +13,12 @@ describe('InteractionAuditService', () => {
   let service: InteractionAuditService;
   let insertOneMock: jest.Mock;
   let createIndexMock: jest.Mock;
+  let publishMock: jest.Mock;
 
-  const createModule = async (mongodb: Record<string, unknown>) => {
+  const createModule = async (config: Record<string, unknown> = {}) => {
     insertOneMock = jest.fn().mockResolvedValue({ acknowledged: true });
     createIndexMock = jest.fn().mockResolvedValue('occurredAt_-1');
+    publishMock = jest.fn().mockResolvedValue(config.publishResult ?? true);
 
     const collection = {
       insertOne: insertOneMock,
@@ -23,7 +26,7 @@ describe('InteractionAuditService', () => {
     };
 
     (MongoClient as jest.Mock).mockImplementation(() => ({
-      connect: mongodb.connectFails
+      connect: config.connectFails
         ? jest.fn().mockRejectedValue(new Error('connection refused'))
         : jest.fn().mockResolvedValue(undefined),
       close: jest.fn().mockResolvedValue(undefined),
@@ -40,12 +43,17 @@ describe('InteractionAuditService', () => {
           useValue: {
             get: jest.fn((key: string) => {
               const map: Record<string, unknown> = {
-                'mongodb.enabled': mongodb.enabled ?? false,
-                'mongodb.uri': mongodb.uri ?? 'mongodb://localhost:27017',
-                'mongodb.database': mongodb.database ?? 'aivacol_audit',
+                'mongodb.uri': config.uri ?? 'mongodb://localhost:27017',
+                'mongodb.database': config.database ?? 'aivacol_audit',
               };
               return map[key];
             }),
+          },
+        },
+        {
+          provide: InteractionAuditPublisher,
+          useValue: {
+            publish: publishMock,
           },
         },
       ],
@@ -54,80 +62,76 @@ describe('InteractionAuditService', () => {
     return module.get(InteractionAuditService);
   };
 
+  const sampleEntry = {
+    occurredAt: '2026-06-04T12:00:00.000Z',
+    method: 'POST',
+    path: '/api/v1/vehicles',
+    statusCode: 201,
+    durationMs: 45,
+    userId: '018f1234-5678-7890-abcd-ef1234567890',
+    userEmail: 'admin@aivacol.com',
+    userRole: UserRole.Admin,
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
   });
 
   afterEach(() => {
     jest.restoreAllMocks();
   });
 
-  it('does not connect when MongoDB is disabled', async () => {
-    service = await createModule({ enabled: false });
+  it('connects to MongoDB on init', async () => {
+    service = await createModule();
     await service.onModuleInit();
-    await service.record({
-      occurredAt: new Date().toISOString(),
-      method: 'GET',
-      path: '/api/v1/vehicles',
-      statusCode: 200,
-      durationMs: 12,
-      userId: null,
-      userEmail: null,
-      userRole: null,
-    });
-
-    expect(MongoClient).not.toHaveBeenCalled();
-    expect(insertOneMock).not.toHaveBeenCalled();
-  });
-
-  it('inserts audit document when MongoDB is enabled', async () => {
-    service = await createModule({ enabled: true });
-    await service.onModuleInit();
-
-    const entry = {
-      occurredAt: '2026-06-04T12:00:00.000Z',
-      method: 'POST',
-      path: '/api/v1/vehicles',
-      statusCode: 201,
-      durationMs: 45,
-      userId: '018f1234-5678-7890-abcd-ef1234567890',
-      userEmail: 'admin@aivacol.com',
-      userRole: UserRole.Admin,
-    };
-
-    await service.record(entry);
+    await service.record(sampleEntry);
 
     expect(MongoClient).toHaveBeenCalledWith('mongodb://localhost:27017');
     expect(createIndexMock).toHaveBeenCalledWith({ occurredAt: -1 });
-    expect(insertOneMock).toHaveBeenCalledWith(entry);
   });
 
-  it('logs and continues when insert fails', async () => {
-    service = await createModule({ enabled: true });
+  it('publishes to RabbitMQ and skips direct insert on success', async () => {
+    service = await createModule({ publishResult: true });
+    await service.onModuleInit();
+    await service.record(sampleEntry);
+
+    expect(publishMock).toHaveBeenCalledWith(sampleEntry);
+    expect(insertOneMock).not.toHaveBeenCalled();
+  });
+
+  it('falls back to MongoDB when publish fails', async () => {
+    service = await createModule({ publishResult: false });
+    await service.onModuleInit();
+    await service.record(sampleEntry);
+
+    expect(publishMock).toHaveBeenCalledWith(sampleEntry);
+    expect(Logger.prototype.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Falling back to direct MongoDB write'),
+    );
+    expect(insertOneMock).toHaveBeenCalledWith(sampleEntry);
+  });
+
+  it('persistToMongo returns true on successful insert', async () => {
+    service = await createModule();
+    await service.onModuleInit();
+
+    await expect(service.persistToMongo(sampleEntry)).resolves.toBe(true);
+    expect(insertOneMock).toHaveBeenCalledWith(sampleEntry);
+  });
+
+  it('persistToMongo returns false when insert fails', async () => {
+    service = await createModule();
     await service.onModuleInit();
     insertOneMock.mockRejectedValueOnce(new Error('write failed'));
 
-    await expect(
-      service.record({
-        occurredAt: new Date().toISOString(),
-        method: 'DELETE',
-        path: '/api/v1/vehicles/1',
-        statusCode: 204,
-        durationMs: 8,
-        userId: null,
-        userEmail: null,
-        userRole: null,
-      }),
-    ).resolves.toBeUndefined();
+    await expect(service.persistToMongo(sampleEntry)).resolves.toBe(false);
   });
 
   it('uses configured database and collection', async () => {
-    service = await createModule({
-      enabled: true,
-      database: 'custom_audit',
-    });
+    service = await createModule({ database: 'custom_audit' });
     await service.onModuleInit();
 
     const clientInstance = (MongoClient as jest.Mock).mock.results[0].value as {
@@ -140,27 +144,17 @@ describe('InteractionAuditService', () => {
     );
   });
 
-  it('logs and skips recording when MongoDB connection fails', async () => {
-    service = await createModule({ enabled: true, connectFails: true });
+  it('persistToMongo returns false when MongoDB connection fails', async () => {
+    service = await createModule({ connectFails: true });
     await service.onModuleInit();
 
-    await service.record({
-      occurredAt: new Date().toISOString(),
-      method: 'GET',
-      path: '/api/v1/vehicles',
-      statusCode: 200,
-      durationMs: 1,
-      userId: null,
-      userEmail: null,
-      userRole: null,
-    });
-
+    await expect(service.persistToMongo(sampleEntry)).resolves.toBe(false);
     expect(Logger.prototype.error).toHaveBeenCalled();
     expect(insertOneMock).not.toHaveBeenCalled();
   });
 
   it('closes client on module destroy', async () => {
-    service = await createModule({ enabled: true });
+    service = await createModule();
     await service.onModuleInit();
 
     const clientInstance = (MongoClient as jest.Mock).mock.results[0].value as {

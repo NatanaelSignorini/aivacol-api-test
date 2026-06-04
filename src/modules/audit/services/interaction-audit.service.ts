@@ -15,6 +15,7 @@ import type {
   InteractionAuditDocument,
   InteractionAuditRecord,
 } from '../interfaces/interaction-audit.interface';
+import { InteractionAuditPublisher } from '../publishers/interaction-audit.publisher';
 
 @Injectable()
 export class InteractionAuditService implements OnModuleInit, OnModuleDestroy {
@@ -22,12 +23,10 @@ export class InteractionAuditService implements OnModuleInit, OnModuleDestroy {
   private client: MongoClient | null = null;
   private collection: Collection<InteractionAuditDocument> | null = null;
 
-  constructor(private readonly configService: ConfigService) {}
-
-  /** Indica se a auditoria MongoDB está habilitada via `MONGODB_ENABLED`. */
-  private get enabled(): boolean {
-    return this.configService.get<boolean>('mongodb.enabled') === true;
-  }
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly auditPublisher: InteractionAuditPublisher,
+  ) {}
 
   /** URI de conexão MongoDB (fallback para valor padrão de desenvolvimento). */
   private get uri(): string {
@@ -43,14 +42,10 @@ export class InteractionAuditService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Conecta ao MongoDB quando habilitado e cria índice em `occurredAt`.
+   * Conecta ao MongoDB e cria índice em `occurredAt`.
    * Falhas de conexão são logadas; a API continua sem auditoria.
    */
   async onModuleInit(): Promise<void> {
-    if (!this.enabled) {
-      return;
-    }
-
     try {
       this.client = new MongoClient(this.uri);
       await this.client.connect();
@@ -79,21 +74,40 @@ export class InteractionAuditService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Insere registro de auditoria de interação HTTP no MongoDB.
-   * Ignora silenciosamente quando desabilitado ou se a gravação falhar.
+   * Enfileira registro de auditoria via RabbitMQ.
+   * Em falha de publish, grava direto no MongoDB como fallback.
    */
   async record(entry: InteractionAuditRecord): Promise<void> {
-    if (!this.enabled || !this.collection) {
+    const published = await this.auditPublisher.publish(entry);
+
+    if (published) {
       return;
+    }
+
+    this.logger.warn(
+      `Falling back to direct MongoDB write for ${entry.method} ${entry.path}`,
+    );
+    await this.persistToMongo(entry);
+  }
+
+  /**
+   * Insere registro de auditoria no MongoDB.
+   * @returns `true` se gravado com sucesso; `false` se sem conexão ou erro de escrita.
+   */
+  async persistToMongo(entry: InteractionAuditRecord): Promise<boolean> {
+    if (!this.collection) {
+      return false;
     }
 
     try {
       await this.collection.insertOne(entry);
+      return true;
     } catch (error) {
       this.logger.error(
         `Failed to record interaction audit for ${entry.method} ${entry.path}`,
         error instanceof Error ? error.stack : String(error),
       );
+      return false;
     }
   }
 }
