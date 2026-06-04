@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -20,6 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import type { ApiDataResponse } from '../../common/interfaces/connection.interface';
 import {
   ApiCreateErrorResponses,
   ApiDeleteErrorResponses,
@@ -28,11 +30,16 @@ import {
   ApiUpdateErrorResponses,
 } from '../../common/swagger/api-responses';
 import { UUID_V7_EXAMPLE } from '../../common/swagger/swagger.constants';
+import {
+  buildItemDataResponse,
+  buildListDataResponse,
+} from '../../common/utils/api-response.util';
 import { JWT_AUTH_SCHEME } from '../../config/swagger.config';
 import type { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import { UserResponseDto } from './dto/user-response.dto';
+import { UsersListQueryDto } from './dto/users-list-query.dto';
 import { UserRole } from './enums/user-role.enum';
 import { UsersService } from './users.service';
 
@@ -51,16 +58,33 @@ export class UsersController {
   create(
     @Body() input: CreateUserInput,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<UserResponseDto> {
-    return this.usersService.create(input, user.id);
+  ): Promise<ApiDataResponse<'user', UserResponseDto>> {
+    return this.usersService
+      .create(input, user.id)
+      .then((userResponse) => buildItemDataResponse('user', userResponse));
   }
 
   @Get()
-  @ApiOperation({ summary: 'List all users (admin only)' })
-  @ApiResponse({ status: 200, type: UserResponseDto, isArray: true })
+  @ApiOperation({ summary: 'List users with filters (admin only)' })
+  @ApiResponse({ status: 200, description: 'Paginated users connection' })
   @ApiListErrorResponses({ resource: 'users', protected: true })
-  findAll(): Promise<UserResponseDto[]> {
-    return this.usersService.findAll();
+  findAll(@Query() query: UsersListQueryDto) {
+    return this.usersService
+      .findAll(query)
+      .then((connection) => buildListDataResponse('users', connection));
+  }
+
+  @Get('me')
+  @Roles()
+  @ApiOperation({ summary: 'Get current authenticated user profile' })
+  @ApiResponse({ status: 200, type: UserResponseDto })
+  @ApiFindOneErrorResponses({ resource: 'users', protected: true })
+  me(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ApiDataResponse<'user', UserResponseDto>> {
+    return this.usersService
+      .findOne(user.id)
+      .then((userResponse) => buildItemDataResponse('user', userResponse));
   }
 
   @Get(':id')
@@ -68,8 +92,12 @@ export class UsersController {
   @ApiParam({ name: 'id', format: 'uuid', example: UUID_V7_EXAMPLE })
   @ApiResponse({ status: 200, type: UserResponseDto })
   @ApiFindOneErrorResponses({ resource: 'users', protected: true })
-  findOne(@Param('id', ParseUUIDPipe) id: string): Promise<UserResponseDto> {
-    return this.usersService.findOne(id);
+  findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ApiDataResponse<'user', UserResponseDto>> {
+    return this.usersService
+      .findOne(id)
+      .then((userResponse) => buildItemDataResponse('user', userResponse));
   }
 
   @Patch(':id')
@@ -80,8 +108,10 @@ export class UsersController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() input: UpdateUserInput,
-  ): Promise<UserResponseDto> {
-    return this.usersService.update(id, input);
+  ): Promise<ApiDataResponse<'user', UserResponseDto>> {
+    return this.usersService
+      .update(id, input)
+      .then((userResponse) => buildItemDataResponse('user', userResponse));
   }
 
   @Delete(':id')

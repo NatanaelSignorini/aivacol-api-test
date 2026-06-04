@@ -5,12 +5,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { type FindOptionsWhere, Like, Repository } from 'typeorm';
 import { passwordEncoder } from '../../common/decorators/password-encoder';
+import type { Connection } from '../../common/interfaces/connection.interface';
 import type { EntityId } from '../../common/types/entity-id.type';
+import { toConnection } from '../../common/utils/api-response.util';
 import type { CreateUserInput } from './dto/create-user.input';
 import type { UpdateUserInput } from './dto/update-user.input';
 import { UserResponseDto } from './dto/user-response.dto';
+import type { UsersListQueryDto } from './dto/users-list-query.dto';
 import { User } from './entities/user.entity';
 
 @Injectable()
@@ -53,12 +56,46 @@ export class UsersService {
     return this.toResponse(saved);
   }
 
-  async findAll(): Promise<UserResponseDto[]> {
-    const users = await this.usersRepository.find({
+  async findAll(
+    query: UsersListQueryDto,
+  ): Promise<Connection<UserResponseDto>> {
+    const where = this.buildListWhere(query);
+    const [users, totalCount] = await this.usersRepository.findAndCount({
+      where,
       order: { nickname: 'ASC' },
+      skip: query.skip,
+      take: query.first,
     });
 
-    return users.map((user) => this.toResponse(user));
+    return toConnection(
+      users.map((user) => this.toResponse(user)),
+      totalCount,
+      query.skip,
+    );
+  }
+
+  private buildListWhere(
+    query: UsersListQueryDto,
+  ): FindOptionsWhere<User> | FindOptionsWhere<User>[] {
+    const where: FindOptionsWhere<User> = {};
+
+    if (query.email) {
+      where.email = Like(`%${query.email.trim().toLowerCase()}%`);
+    }
+
+    if (query.name) {
+      where.name = Like(`%${query.name.trim()}%`);
+    }
+
+    if (query.nickname) {
+      where.nickname = Like(`%${query.nickname.trim()}%`);
+    }
+
+    if (query.role) {
+      where.role = query.role;
+    }
+
+    return where;
   }
 
   async findOne(id: EntityId): Promise<UserResponseDto> {

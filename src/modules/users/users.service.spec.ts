@@ -7,6 +7,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import type { Repository } from 'typeorm';
 import { passwordEncoder } from '../../common/decorators/password-encoder';
+import { DEFAULT_PAGE_SIZE } from '../../common/dto/pagination-query.dto';
 import { User } from './entities/user.entity';
 import { UserRole } from './enums/user-role.enum';
 import { UsersService } from './users.service';
@@ -21,7 +22,10 @@ jest.mock('../../common/decorators/password-encoder', () => ({
 describe('UsersService', () => {
   let service: UsersService;
   let repository: jest.Mocked<
-    Pick<Repository<User>, 'create' | 'save' | 'find' | 'findOne' | 'remove'>
+    Pick<
+      Repository<User>,
+      'create' | 'save' | 'find' | 'findAndCount' | 'findOne' | 'remove'
+    >
   >;
 
   const adminId = '018f1234-5678-7890-abcd-ef1234567890';
@@ -46,6 +50,7 @@ describe('UsersService', () => {
       create: jest.fn(),
       save: jest.fn(),
       find: jest.fn(),
+      findAndCount: jest.fn(),
       findOne: jest.fn(),
       remove: jest.fn(),
     };
@@ -177,16 +182,20 @@ describe('UsersService', () => {
   });
 
   describe('findAll', () => {
-    it('returns all users without password hash', async () => {
-      repository.find.mockResolvedValue([existingUser]);
+    it('returns paginated users without password hash', async () => {
+      repository.findAndCount.mockResolvedValue([[existingUser], 1]);
 
-      const result = await service.findAll();
+      const result = await service.findAll({ first: DEFAULT_PAGE_SIZE, skip: 0 });
 
-      expect(repository.find).toHaveBeenCalledWith({
+      expect(repository.findAndCount).toHaveBeenCalledWith({
+        where: {},
         order: { nickname: 'ASC' },
+        skip: 0,
+        take: DEFAULT_PAGE_SIZE,
       });
-      expect(result[0]).not.toHaveProperty('passwordHash');
-      expect(result[0].nickname).toBe('operator1');
+      expect(result.nodes[0]).not.toHaveProperty('passwordHash');
+      expect(result.nodes[0].nickname).toBe('operator1');
+      expect(result.totalCount).toBe(1);
     });
   });
 
