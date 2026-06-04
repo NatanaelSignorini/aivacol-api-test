@@ -7,6 +7,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import appConfig from './config/app.config';
 import { cacheConfigFactory } from './config/cache.config';
 import { typeOrmConfigFactory } from './config/typeorm.config';
+import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
@@ -31,6 +32,7 @@ import { VehiclesModule } from './modules/vehicles/vehicles.module';
       inject: [ConfigService],
       useFactory: cacheConfigFactory,
     }),
+    AuditModule,
     AuthModule,
     UsersModule,
     BrandsModule,
