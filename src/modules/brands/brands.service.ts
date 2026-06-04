@@ -33,6 +33,7 @@ export class BrandsService {
     });
 
     const saved = await this.brandsRepository.save(brand);
+
     return this.toResponse(saved);
   }
 
@@ -61,6 +62,7 @@ export class BrandsService {
 
   async findOne(id: EntityId): Promise<BrandResponseDto> {
     const brand = await this.findEntityOrFail(id);
+
     return this.toResponse(brand);
   }
 
@@ -76,6 +78,7 @@ export class BrandsService {
     }
 
     const saved = await this.brandsRepository.save(brand);
+
     return this.toResponse(saved);
   }
 

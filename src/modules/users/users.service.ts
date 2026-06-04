@@ -53,6 +53,7 @@ export class UsersService {
     });
 
     const saved = await this.usersRepository.save(user);
+
     return this.toResponse(saved);
   }
 
@@ -100,6 +101,7 @@ export class UsersService {
 
   async findOne(id: EntityId): Promise<UserResponseDto> {
     const user = await this.findEntityOrFail(id);
+
     return this.toResponse(user);
   }
 
@@ -129,6 +131,7 @@ export class UsersService {
     }
 
     const saved = await this.usersRepository.save(user);
+
     return this.toResponse(saved);
   }
 

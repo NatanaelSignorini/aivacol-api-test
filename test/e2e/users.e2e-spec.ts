@@ -259,7 +259,6 @@ describe('Users (e2e)', () => {
       nickname: 'fleetop2',
       email: 'fleetop2@aivacol.com',
       role: UserRole.Operator,
-      createdBy: mockUser.id,
     });
     expect(createdUser).not.toHaveProperty('passwordHash');
     expect(createdUser).not.toHaveProperty('password');

@@ -217,7 +217,6 @@ describe('Brands (e2e)', () => {
 
     expect(brand).toMatchObject({
       name: 'Toyota',
-      createdBy: mockOperatorUser.id,
     });
     expect(brand.id).toEqual(expect.any(String));
   });

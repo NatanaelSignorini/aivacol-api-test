@@ -79,9 +79,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Get current authenticated user profile' })
   @ApiResponse({ status: 200, type: UserResponseDto })
   @ApiFindOneErrorResponses({ resource: 'users', protected: true })
-  me(
-    @CurrentUser() user: AuthenticatedUser,
-  ): Promise<ApiDataResponse<'user', UserResponseDto>> {
+  me(@CurrentUser() user: AuthenticatedUser): Promise<ApiDataResponse<'user', UserResponseDto>> {
     return this.usersService
       .findOne(user.id)
       .then((userResponse) => buildItemDataResponse('user', userResponse));
