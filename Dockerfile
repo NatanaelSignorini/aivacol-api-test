@@ -35,7 +35,7 @@ USER node
 EXPOSE 4000
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
-CMD ["yarn", "run", "start:dev"]
+CMD ["yarn", "nest", "start", "--watch"]
 
 FROM base AS production
 

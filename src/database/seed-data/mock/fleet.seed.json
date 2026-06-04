@@ -1,0 +1,748 @@
+{
+  "version": 1,
+  "brands": [
+    { "name": "Volkswagen" },
+    { "name": "Fiat" },
+    { "name": "Toyota" },
+    { "name": "Chevrolet" },
+    { "name": "Ford" },
+    { "name": "Honda" },
+    { "name": "Hyundai" },
+    { "name": "Renault" },
+    { "name": "Jeep" },
+    { "name": "Nissan" },
+    { "name": "Peugeot" },
+    { "name": "Mitsubishi" }
+  ],
+  "models": [
+    { "name": "Gol 1.0", "brand": "Volkswagen" },
+    { "name": "Polo", "brand": "Volkswagen" },
+    { "name": "T-Cross", "brand": "Volkswagen" },
+    { "name": "Virtus", "brand": "Volkswagen" },
+    { "name": "Argo", "brand": "Fiat" },
+    { "name": "Strada", "brand": "Fiat" },
+    { "name": "Toro", "brand": "Fiat" },
+    { "name": "Mobi", "brand": "Fiat" },
+    { "name": "Corolla", "brand": "Toyota" },
+    { "name": "Hilux", "brand": "Toyota" },
+    { "name": "Yaris", "brand": "Toyota" },
+    { "name": "SW4", "brand": "Toyota" },
+    { "name": "Onix", "brand": "Chevrolet" },
+    { "name": "Onix Plus", "brand": "Chevrolet" },
+    { "name": "Tracker", "brand": "Chevrolet" },
+    { "name": "S10", "brand": "Chevrolet" },
+    { "name": "Ka", "brand": "Ford" },
+    { "name": "Ranger", "brand": "Ford" },
+    { "name": "Territory", "brand": "Ford" },
+    { "name": "Maverick", "brand": "Ford" },
+    { "name": "Civic", "brand": "Honda" },
+    { "name": "HR-V", "brand": "Honda" },
+    { "name": "City", "brand": "Honda" },
+    { "name": "CR-V", "brand": "Honda" },
+    { "name": "HB20", "brand": "Hyundai" },
+    { "name": "Creta", "brand": "Hyundai" },
+    { "name": "Tucson", "brand": "Hyundai" },
+    { "name": "HB20S", "brand": "Hyundai" },
+    { "name": "Kwid", "brand": "Renault" },
+    { "name": "Duster", "brand": "Renault" },
+    { "name": "Oroch", "brand": "Renault" },
+    { "name": "Kardian", "brand": "Renault" },
+    { "name": "Compass", "brand": "Jeep" },
+    { "name": "Renegade", "brand": "Jeep" },
+    { "name": "Commander", "brand": "Jeep" },
+    { "name": "Gladiator", "brand": "Jeep" },
+    { "name": "Kicks", "brand": "Nissan" },
+    { "name": "Versa", "brand": "Nissan" },
+    { "name": "Frontier", "brand": "Nissan" },
+    { "name": "Sentra", "brand": "Nissan" },
+    { "name": "208", "brand": "Peugeot" },
+    { "name": "2008", "brand": "Peugeot" },
+    { "name": "3008", "brand": "Peugeot" },
+    { "name": "Partner", "brand": "Peugeot" },
+    { "name": "L200", "brand": "Mitsubishi" },
+    { "name": "Outlander", "brand": "Mitsubishi" },
+    { "name": "Eclipse Cross", "brand": "Mitsubishi" },
+    { "name": "Pajero Sport", "brand": "Mitsubishi" }
+  ],
+  "vehicles": [
+    {
+      "licensePlate": "ABC1D23",
+      "chassis": "9BWZZZ377VT004251",
+      "renavam": "10000000001",
+      "year": 2023,
+      "model": "Gol 1.0"
+    },
+    {
+      "licensePlate": "ABC2D24",
+      "chassis": "9BWZZZ377VT004252",
+      "renavam": "10000000002",
+      "year": 2022,
+      "model": "Gol 1.0"
+    },
+    {
+      "licensePlate": "XYZ9F45",
+      "chassis": "9BWZZZ377VT004253",
+      "renavam": "10000000003",
+      "year": 2024,
+      "model": "Polo"
+    },
+    {
+      "licensePlate": "XYZ0F46",
+      "chassis": "9BWZZZ377VT004254",
+      "renavam": "10000000004",
+      "year": 2023,
+      "model": "Polo"
+    },
+    {
+      "licensePlate": "TCX1A11",
+      "chassis": "9BWZZZ377VT004255",
+      "renavam": "10000000005",
+      "year": 2024,
+      "model": "T-Cross"
+    },
+    {
+      "licensePlate": "TCX2B22",
+      "chassis": "9BWZZZ377VT004256",
+      "renavam": "10000000006",
+      "year": 2021,
+      "model": "T-Cross"
+    },
+    {
+      "licensePlate": "VRT3C33",
+      "chassis": "9BWZZZ377VT004257",
+      "renavam": "10000000007",
+      "year": 2023,
+      "model": "Virtus"
+    },
+    {
+      "licensePlate": "VRT4D44",
+      "chassis": "9BWZZZ377VT004258",
+      "renavam": "10000000008",
+      "year": 2022,
+      "model": "Virtus"
+    },
+    {
+      "licensePlate": "RIO2A34",
+      "chassis": "9BD15822FB33A3345",
+      "renavam": "10000000009",
+      "year": 2022,
+      "model": "Argo"
+    },
+    {
+      "licensePlate": "RIO3A35",
+      "chassis": "9BD15822FB33A3346",
+      "renavam": "10000000010",
+      "year": 2021,
+      "model": "Argo"
+    },
+    {
+      "licensePlate": "HBR3B12",
+      "chassis": "9BD15822FB33A3347",
+      "renavam": "10000000011",
+      "year": 2021,
+      "model": "Strada"
+    },
+    {
+      "licensePlate": "HBR4B13",
+      "chassis": "9BD15822FB33A3348",
+      "renavam": "10000000012",
+      "year": 2020,
+      "model": "Strada"
+    },
+    {
+      "licensePlate": "TOR5C14",
+      "chassis": "9BD15822FB33A3349",
+      "renavam": "10000000013",
+      "year": 2024,
+      "model": "Toro"
+    },
+    {
+      "licensePlate": "TOR6C15",
+      "chassis": "9BD15822FB33A3350",
+      "renavam": "10000000014",
+      "year": 2023,
+      "model": "Toro"
+    },
+    {
+      "licensePlate": "MOB7D16",
+      "chassis": "9BD15822FB33A3351",
+      "renavam": "10000000015",
+      "year": 2019,
+      "model": "Mobi"
+    },
+    {
+      "licensePlate": "MOB8D17",
+      "chassis": "9BD15822FB33A3352",
+      "renavam": "10000000016",
+      "year": 2020,
+      "model": "Mobi"
+    },
+    {
+      "licensePlate": "BRA4C56",
+      "chassis": "JTDBU4FE0D3123456",
+      "renavam": "10000000017",
+      "year": 2024,
+      "model": "Corolla"
+    },
+    {
+      "licensePlate": "BRA5C57",
+      "chassis": "JTDBU4FE0D3123457",
+      "renavam": "10000000018",
+      "year": 2023,
+      "model": "Corolla"
+    },
+    {
+      "licensePlate": "SPA5D78",
+      "chassis": "JTDBU4FE0D3123458",
+      "renavam": "10000000019",
+      "year": 2023,
+      "model": "Corolla"
+    },
+    {
+      "licensePlate": "HIL6E79",
+      "chassis": "JTDBU4FE0D3123459",
+      "renavam": "10000000020",
+      "year": 2024,
+      "model": "Hilux"
+    },
+    {
+      "licensePlate": "HIL7E80",
+      "chassis": "JTDBU4FE0D3123460",
+      "renavam": "10000000021",
+      "year": 2022,
+      "model": "Hilux"
+    },
+    {
+      "licensePlate": "YAR8F81",
+      "chassis": "JTDBU4FE0D3123461",
+      "renavam": "10000000022",
+      "year": 2021,
+      "model": "Yaris"
+    },
+    {
+      "licensePlate": "YAR9F82",
+      "chassis": "JTDBU4FE0D3123462",
+      "renavam": "10000000023",
+      "year": 2020,
+      "model": "Yaris"
+    },
+    {
+      "licensePlate": "SWA0G83",
+      "chassis": "JTDBU4FE0D3123463",
+      "renavam": "10000000024",
+      "year": 2024,
+      "model": "SW4"
+    },
+    {
+      "licensePlate": "SWA1G84",
+      "chassis": "JTDBU4FE0D3123464",
+      "renavam": "10000000025",
+      "year": 2023,
+      "model": "SW4"
+    },
+    {
+      "licensePlate": "ONI6E90",
+      "chassis": "9BGKS48B0GG123456",
+      "renavam": "10000000026",
+      "year": 2022,
+      "model": "Onix"
+    },
+    {
+      "licensePlate": "ONI7E91",
+      "chassis": "9BGKS48B0GG123457",
+      "renavam": "10000000027",
+      "year": 2021,
+      "model": "Onix"
+    },
+    {
+      "licensePlate": "TRK7F11",
+      "chassis": "9BGKS48B0GG123458",
+      "renavam": "10000000028",
+      "year": 2020,
+      "model": "Onix Plus"
+    },
+    {
+      "licensePlate": "TRK8F12",
+      "chassis": "9BGKS48B0GG123459",
+      "renavam": "10000000029",
+      "year": 2024,
+      "model": "Onix Plus"
+    },
+    {
+      "licensePlate": "TRC9H13",
+      "chassis": "9BGKS48B0GG123460",
+      "renavam": "10000000030",
+      "year": 2023,
+      "model": "Tracker"
+    },
+    {
+      "licensePlate": "TRC0H14",
+      "chassis": "9BGKS48B0GG123461",
+      "renavam": "10000000031",
+      "year": 2022,
+      "model": "Tracker"
+    },
+    {
+      "licensePlate": "SXT1J15",
+      "chassis": "9BGKS48B0GG123462",
+      "renavam": "10000000032",
+      "year": 2024,
+      "model": "S10"
+    },
+    {
+      "licensePlate": "SXT2J16",
+      "chassis": "9BGKS48B0GG123463",
+      "renavam": "10000000033",
+      "year": 2021,
+      "model": "S10"
+    },
+    {
+      "licensePlate": "KAA3K17",
+      "chassis": "9BFZE55P0C8123456",
+      "renavam": "10000000034",
+      "year": 2019,
+      "model": "Ka"
+    },
+    {
+      "licensePlate": "KAA4K18",
+      "chassis": "9BFZE55P0C8123457",
+      "renavam": "10000000035",
+      "year": 2020,
+      "model": "Ka"
+    },
+    {
+      "licensePlate": "RNG5L19",
+      "chassis": "9BFZE55P0C8123458",
+      "renavam": "10000000036",
+      "year": 2024,
+      "model": "Ranger"
+    },
+    {
+      "licensePlate": "RNG6L20",
+      "chassis": "9BFZE55P0C8123459",
+      "renavam": "10000000037",
+      "year": 2023,
+      "model": "Ranger"
+    },
+    {
+      "licensePlate": "TER7M21",
+      "chassis": "9BFZE55P0C8123460",
+      "renavam": "10000000038",
+      "year": 2022,
+      "model": "Territory"
+    },
+    {
+      "licensePlate": "TER8M22",
+      "chassis": "9BFZE55P0C8123461",
+      "renavam": "10000000039",
+      "year": 2021,
+      "model": "Territory"
+    },
+    {
+      "licensePlate": "MAV9N23",
+      "chassis": "9BFZE55P0C8123462",
+      "renavam": "10000000040",
+      "year": 2024,
+      "model": "Maverick"
+    },
+    {
+      "licensePlate": "MAV0N24",
+      "chassis": "9BFZE55P0C8123463",
+      "renavam": "10000000041",
+      "year": 2023,
+      "model": "Maverick"
+    },
+    {
+      "licensePlate": "CIV1P25",
+      "chassis": "93HGE5870DZ123456",
+      "renavam": "10000000042",
+      "year": 2024,
+      "model": "Civic"
+    },
+    {
+      "licensePlate": "CIV2P26",
+      "chassis": "93HGE5870DZ123457",
+      "renavam": "10000000043",
+      "year": 2022,
+      "model": "Civic"
+    },
+    {
+      "licensePlate": "HRV3Q27",
+      "chassis": "93HGE5870DZ123458",
+      "renavam": "10000000044",
+      "year": 2023,
+      "model": "HR-V"
+    },
+    {
+      "licensePlate": "HRV4Q28",
+      "chassis": "93HGE5870DZ123459",
+      "renavam": "10000000045",
+      "year": 2021,
+      "model": "HR-V"
+    },
+    {
+      "licensePlate": "CTY5R29",
+      "chassis": "93HGE5870DZ123460",
+      "renavam": "10000000046",
+      "year": 2020,
+      "model": "City"
+    },
+    {
+      "licensePlate": "CTY6R30",
+      "chassis": "93HGE5870DZ123461",
+      "renavam": "10000000047",
+      "year": 2019,
+      "model": "City"
+    },
+    {
+      "licensePlate": "CRV7S31",
+      "chassis": "93HGE5870DZ123462",
+      "renavam": "10000000048",
+      "year": 2024,
+      "model": "CR-V"
+    },
+    {
+      "licensePlate": "CRV8S32",
+      "chassis": "93HGE5870DZ123463",
+      "renavam": "10000000049",
+      "year": 2022,
+      "model": "CR-V"
+    },
+    {
+      "licensePlate": "HBY0T33",
+      "chassis": "KMHAB00ABCD123451",
+      "renavam": "10000000050",
+      "year": 2023,
+      "model": "HB20"
+    },
+    {
+      "licensePlate": "HBZ1T34",
+      "chassis": "KMHAB00ABCD123452",
+      "renavam": "10000000051",
+      "year": 2022,
+      "model": "HB20"
+    },
+    {
+      "licensePlate": "CRT2U35",
+      "chassis": "KMHAB00ABCD123453",
+      "renavam": "10000000052",
+      "year": 2024,
+      "model": "Creta"
+    },
+    {
+      "licensePlate": "CRT3U36",
+      "chassis": "KMHAB00ABCD123454",
+      "renavam": "10000000053",
+      "year": 2021,
+      "model": "Creta"
+    },
+    {
+      "licensePlate": "TUC4V37",
+      "chassis": "KMHAB00ABCD123455",
+      "renavam": "10000000054",
+      "year": 2023,
+      "model": "Tucson"
+    },
+    {
+      "licensePlate": "TUC5V38",
+      "chassis": "KMHAB00ABCD123456",
+      "renavam": "10000000055",
+      "year": 2020,
+      "model": "Tucson"
+    },
+    {
+      "licensePlate": "HBS6W39",
+      "chassis": "KMHAB00ABCD123457",
+      "renavam": "10000000056",
+      "year": 2022,
+      "model": "HB20S"
+    },
+    {
+      "licensePlate": "HBS7W40",
+      "chassis": "KMHAB00ABCD123458",
+      "renavam": "10000000057",
+      "year": 2021,
+      "model": "HB20S"
+    },
+    {
+      "licensePlate": "KWD8X41",
+      "chassis": "93Y4SENH0MJ123456",
+      "renavam": "10000000058",
+      "year": 2020,
+      "model": "Kwid"
+    },
+    {
+      "licensePlate": "KWD9X42",
+      "chassis": "93Y4SENH0MJ123457",
+      "renavam": "10000000059",
+      "year": 2019,
+      "model": "Kwid"
+    },
+    {
+      "licensePlate": "DST0Y43",
+      "chassis": "93Y4SENH0MJ123458",
+      "renavam": "10000000060",
+      "year": 2024,
+      "model": "Duster"
+    },
+    {
+      "licensePlate": "DST1Y44",
+      "chassis": "93Y4SENH0MJ123459",
+      "renavam": "10000000061",
+      "year": 2022,
+      "model": "Duster"
+    },
+    {
+      "licensePlate": "ORO2Z45",
+      "chassis": "93Y4SENH0MJ123460",
+      "renavam": "10000000062",
+      "year": 2023,
+      "model": "Oroch"
+    },
+    {
+      "licensePlate": "ORO3Z46",
+      "chassis": "93Y4SENH0MJ123461",
+      "renavam": "10000000063",
+      "year": 2021,
+      "model": "Oroch"
+    },
+    {
+      "licensePlate": "KRD4A47",
+      "chassis": "93Y4SENH0MJ123462",
+      "renavam": "10000000064",
+      "year": 2024,
+      "model": "Kardian"
+    },
+    {
+      "licensePlate": "KRD5A48",
+      "chassis": "93Y4SENH0MJ123463",
+      "renavam": "10000000065",
+      "year": 2023,
+      "model": "Kardian"
+    },
+    {
+      "licensePlate": "CMP6B49",
+      "chassis": "988611124GA123456",
+      "renavam": "10000000066",
+      "year": 2024,
+      "model": "Compass"
+    },
+    {
+      "licensePlate": "CMP7B50",
+      "chassis": "988611124GA123457",
+      "renavam": "10000000067",
+      "year": 2022,
+      "model": "Compass"
+    },
+    {
+      "licensePlate": "RNG8C51",
+      "chassis": "988611124GA123458",
+      "renavam": "10000000068",
+      "year": 2023,
+      "model": "Renegade"
+    },
+    {
+      "licensePlate": "RNG9C52",
+      "chassis": "988611124GA123459",
+      "renavam": "10000000069",
+      "year": 2021,
+      "model": "Renegade"
+    },
+    {
+      "licensePlate": "CMD0D53",
+      "chassis": "988611124GA123460",
+      "renavam": "10000000070",
+      "year": 2024,
+      "model": "Commander"
+    },
+    {
+      "licensePlate": "CMD1D54",
+      "chassis": "988611124GA123461",
+      "renavam": "10000000071",
+      "year": 2022,
+      "model": "Commander"
+    },
+    {
+      "licensePlate": "GLD2E55",
+      "chassis": "988611124GA123462",
+      "renavam": "10000000072",
+      "year": 2023,
+      "model": "Gladiator"
+    },
+    {
+      "licensePlate": "GLD3E56",
+      "chassis": "988611124GA123463",
+      "renavam": "10000000073",
+      "year": 2021,
+      "model": "Gladiator"
+    },
+    {
+      "licensePlate": "KCK4F57",
+      "chassis": "94DFCUK13KD123456",
+      "renavam": "10000000074",
+      "year": 2024,
+      "model": "Kicks"
+    },
+    {
+      "licensePlate": "KCK5F58",
+      "chassis": "94DFCUK13KD123457",
+      "renavam": "10000000075",
+      "year": 2022,
+      "model": "Kicks"
+    },
+    {
+      "licensePlate": "VER6G59",
+      "chassis": "94DFCUK13KD123458",
+      "renavam": "10000000076",
+      "year": 2023,
+      "model": "Versa"
+    },
+    {
+      "licensePlate": "VER7G60",
+      "chassis": "94DFCUK13KD123459",
+      "renavam": "10000000077",
+      "year": 2020,
+      "model": "Versa"
+    },
+    {
+      "licensePlate": "FRT8H61",
+      "chassis": "94DFCUK13KD123460",
+      "renavam": "10000000078",
+      "year": 2024,
+      "model": "Frontier"
+    },
+    {
+      "licensePlate": "FRT9H62",
+      "chassis": "94DFCUK13KD123461",
+      "renavam": "10000000079",
+      "year": 2021,
+      "model": "Frontier"
+    },
+    {
+      "licensePlate": "SEN0J63",
+      "chassis": "94DFCUK13KD123462",
+      "renavam": "10000000080",
+      "year": 2022,
+      "model": "Sentra"
+    },
+    {
+      "licensePlate": "SEN1J64",
+      "chassis": "94DFCUK13KD123463",
+      "renavam": "10000000081",
+      "year": 2019,
+      "model": "Sentra"
+    },
+    {
+      "licensePlate": "PEG1K65",
+      "chassis": "VF3AB12CD34E56781",
+      "renavam": "10000000082",
+      "year": 2023,
+      "model": "208"
+    },
+    {
+      "licensePlate": "PEG2K66",
+      "chassis": "VF3AB12CD34E56782",
+      "renavam": "10000000083",
+      "year": 2021,
+      "model": "208"
+    },
+    {
+      "licensePlate": "PGU1L67",
+      "chassis": "VF3AB12CD34E56783",
+      "renavam": "10000000084",
+      "year": 2024,
+      "model": "2008"
+    },
+    {
+      "licensePlate": "PGU2L68",
+      "chassis": "VF3AB12CD34E56784",
+      "renavam": "10000000085",
+      "year": 2022,
+      "model": "2008"
+    },
+    {
+      "licensePlate": "PTH1M69",
+      "chassis": "VF3AB12CD34E56785",
+      "renavam": "10000000086",
+      "year": 2023,
+      "model": "3008"
+    },
+    {
+      "licensePlate": "PTH2M70",
+      "chassis": "VF3AB12CD34E56786",
+      "renavam": "10000000087",
+      "year": 2020,
+      "model": "3008"
+    },
+    {
+      "licensePlate": "PTR2N71",
+      "chassis": "VF3AB12CD34E56787",
+      "renavam": "10000000088",
+      "year": 2018,
+      "model": "Partner"
+    },
+    {
+      "licensePlate": "PTR3N72",
+      "chassis": "VF3AB12CD34E56788",
+      "renavam": "10000000089",
+      "year": 2019,
+      "model": "Partner"
+    },
+    {
+      "licensePlate": "MIT1P73",
+      "chassis": "MMBAB12CD34E56781",
+      "renavam": "10000000090",
+      "year": 2024,
+      "model": "L200"
+    },
+    {
+      "licensePlate": "MIT2P74",
+      "chassis": "MMBAB12CD34E56782",
+      "renavam": "10000000091",
+      "year": 2022,
+      "model": "L200"
+    },
+    {
+      "licensePlate": "OUT4Q75",
+      "chassis": "MMBAB12CD34E56783",
+      "renavam": "10000000092",
+      "year": 2023,
+      "model": "Outlander"
+    },
+    {
+      "licensePlate": "OUT5Q76",
+      "chassis": "MMBAB12CD34E56784",
+      "renavam": "10000000093",
+      "year": 2021,
+      "model": "Outlander"
+    },
+    {
+      "licensePlate": "ECL6R77",
+      "chassis": "MMBAB12CD34E56785",
+      "renavam": "10000000094",
+      "year": 2024,
+      "model": "Eclipse Cross"
+    },
+    {
+      "licensePlate": "ECL7R78",
+      "chassis": "MMBAB12CD34E56786",
+      "renavam": "10000000095",
+      "year": 2022,
+      "model": "Eclipse Cross"
+    },
+    {
+      "licensePlate": "PAJ8S79",
+      "chassis": "MMBXXXXXXXX123462",
+      "renavam": "10000000096",
+      "year": 2023,
+      "model": "Pajero Sport"
+    },
+    {
+      "licensePlate": "PAJ9S80",
+      "chassis": "MMBXXXXXXXX123463",
+      "renavam": "10000000097",
+      "year": 2020,
+      "model": "Pajero Sport"
+    }
+  ]
+}

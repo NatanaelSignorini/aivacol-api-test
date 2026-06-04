@@ -26,7 +26,13 @@ if [ ! -d node_modules/email-validator ] || [ ! -d node_modules/password-validat
   yarn install --frozen-lockfile --non-interactive --force
 fi
 
+echo "Validating environment..."
+yarn validate:env
+
 echo "Running database migrations..."
 yarn migration:run
+
+echo "Running database seeders..."
+yarn seed
 
 exec "$@"
