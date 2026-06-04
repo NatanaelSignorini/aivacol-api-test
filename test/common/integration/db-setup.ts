@@ -1,12 +1,12 @@
 import { execSync } from 'node:child_process';
-import { loadTestEnv } from './load-test-env';
+import { loadIntegrationTestEnv } from '../test-env';
 
 let preparePromise: Promise<void> | null = null;
 
 export async function prepareIntegrationDatabase(): Promise<void> {
   if (!preparePromise) {
     preparePromise = (async () => {
-      loadTestEnv();
+      loadIntegrationTestEnv();
 
       execSync('yarn db:create', {
         cwd: process.cwd(),
@@ -29,6 +29,6 @@ export async function prepareIntegrationDatabase(): Promise<void> {
   return preparePromise;
 }
 
-export async function destroyIntegrationDatabase(): Promise<void> {
+export async function resetIntegrationDatabaseSetup(): Promise<void> {
   preparePromise = null;
 }

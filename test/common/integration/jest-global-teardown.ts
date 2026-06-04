@@ -1,14 +1,14 @@
 import { unlinkSync } from 'node:fs';
 import {
-  E2E_INTEGRATION_FLAG_FILE,
-  teardownIntegrationE2e,
-} from './integration-bootstrap';
+  INTEGRATION_READY_FLAG_FILE,
+  teardownIntegrationSuite,
+} from './suite-setup';
 
 export default async function globalTeardown(): Promise<void> {
-  await teardownIntegrationE2e();
+  await teardownIntegrationSuite();
 
   try {
-    unlinkSync(E2E_INTEGRATION_FLAG_FILE);
+    unlinkSync(INTEGRATION_READY_FLAG_FILE);
   } catch {
     // flag file may not exist when infra was unavailable
   }

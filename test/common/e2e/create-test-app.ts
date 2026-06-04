@@ -8,16 +8,16 @@ import { PassportModule } from '@nestjs/passport';
 import { Test, type TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import type { App } from 'supertest/types';
-import { HttpExceptionFilter } from '../../src/common/filters/http-exception.filter';
-import appConfig from '../../src/config/app.config';
-import { AuthController } from '../../src/modules/auth/auth.controller';
-import { AuthService } from '../../src/modules/auth/auth.service';
-import { JwtAuthGuard } from '../../src/modules/auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../../src/modules/auth/guards/roles.guard';
-import { JwtStrategy } from '../../src/modules/auth/jwt.strategy';
-import { UserRole } from '../../src/modules/users/enums/user-role.enum';
-import { UsersController } from '../../src/modules/users/users.controller';
-import { UsersService } from '../../src/modules/users/users.service';
+import { HttpExceptionFilter } from '../../../src/common/filters/http-exception.filter';
+import appConfig from '../../../src/config/app.config';
+import { AuthController } from '../../../src/modules/auth/auth.controller';
+import { AuthService } from '../../../src/modules/auth/auth.service';
+import { JwtAuthGuard } from '../../../src/modules/auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../src/modules/auth/guards/roles.guard';
+import { JwtStrategy } from '../../../src/modules/auth/jwt.strategy';
+import { UserRole } from '../../../src/modules/users/enums/user-role.enum';
+import { UsersController } from '../../../src/modules/users/users.controller';
+import { UsersService } from '../../../src/modules/users/users.service';
 
 process.env.JWT_SECRET ??= 'test-jwt-secret-key-for-testing-only-32-chars';
 

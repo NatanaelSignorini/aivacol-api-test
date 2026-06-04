@@ -1,6 +1,5 @@
 import { createConnection } from 'node:net';
-import { env } from '../../src/config/env.config';
-import { loadTestEnv } from './load-test-env';
+import { loadIntegrationTestEnv } from '../test-env';
 
 function probeTcp(
   host: string,
@@ -25,12 +24,17 @@ function probeTcp(
   });
 }
 
-export async function isDockerInfraAvailable(): Promise<boolean> {
-  loadTestEnv();
+export async function isIntegrationInfraReachable(): Promise<boolean> {
+  loadIntegrationTestEnv();
+
+  const dbHost = process.env.DB_HOST ?? 'localhost';
+  const dbPort = Number.parseInt(process.env.DB_PORT ?? '1433', 10);
+  const redisHost = process.env.REDIS_HOST ?? 'localhost';
+  const redisPort = Number.parseInt(process.env.REDIS_PORT ?? '6379', 10);
 
   const [sqlReady, redisReady] = await Promise.all([
-    probeTcp(env.DB_HOST, env.DB_PORT),
-    probeTcp(env.REDIS_HOST, env.REDIS_PORT),
+    probeTcp(dbHost, dbPort),
+    probeTcp(redisHost, redisPort),
   ]);
 
   return sqlReady && redisReady;

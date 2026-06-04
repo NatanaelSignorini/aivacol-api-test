@@ -14,7 +14,10 @@ module.exports = {
     {
       ...sharedConfig,
       displayName: 'unit',
-      testMatch: ['<rootDir>/src/**/*.spec.ts'],
+      testMatch: [
+        '<rootDir>/src/**/*.spec.ts',
+        '<rootDir>/test/fixtures/**/*.spec.ts',
+      ],
       collectCoverageFrom: [
         'src/**/*.ts',
         '!src/**/*.d.ts',
@@ -22,6 +25,14 @@ module.exports = {
         '!src/**/*.spec.ts',
       ],
       coverageDirectory: 'coverage',
+      coverageThreshold: {
+        global: {
+          branches: 70,
+          functions: 80,
+          lines: 80,
+          statements: 80,
+        },
+      },
     },
     {
       ...sharedConfig,
@@ -32,8 +43,8 @@ module.exports = {
       ...sharedConfig,
       displayName: 'integration',
       testMatch: ['<rootDir>/test/integration/**/*.integration-spec.ts'],
-      globalSetup: '<rootDir>/test/common/integration-global-setup.ts',
-      globalTeardown: '<rootDir>/test/common/integration-global-teardown.ts',
+      globalSetup: '<rootDir>/test/common/integration/jest-global-setup.ts',
+      globalTeardown: '<rootDir>/test/common/integration/jest-global-teardown.ts',
       testTimeout: 120000,
       maxWorkers: 1,
     },

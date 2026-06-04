@@ -17,3 +17,12 @@ export function loadTestEnv(): void {
   process.env.MONGODB_ENABLED ??= 'false';
   process.env.RABBITMQ_ENABLED ??= 'false';
 }
+
+/** Integration tests run on the host against published Docker ports. */
+export function loadIntegrationTestEnv(): void {
+  loadTestEnv();
+  process.env.DB_HOST = 'localhost';
+  process.env.REDIS_HOST = 'localhost';
+  process.env.MONGODB_ENABLED = 'false';
+  process.env.RABBITMQ_ENABLED = 'false';
+}

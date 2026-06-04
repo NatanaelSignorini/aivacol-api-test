@@ -8,7 +8,8 @@ Backend NestJS do módulo **Gestão de Frota** da plataforma Aivacol (teste téc
 | SQL Server + TypeORM | Persistência e migrations |
 | Redis | Cache de listagem/consulta de veículos |
 | JWT | Todas as rotas protegidas, exceto login |
-| Swagger | UI em `/api/docs` (configurável) |
+| Swagger | UI em `/api/docs` (desabilitado em `NODE_ENV=production`) |
+| Helmet + Throttler | Headers de segurança e rate limiting global |
 
 **Gerenciador de pacotes:** [Yarn](https://yarnpkg.com/)
 
@@ -64,7 +65,7 @@ Logs só do MongoDB (outro terminal): `docker compose -f docker-compose.yml logs
 
 - API: `http://localhost:4000` (porta definida em `PORT`)
 - Prefixo REST: `http://localhost:4000/api/v1`
-- Swagger UI: `http://localhost:4000/api/docs` (ou valor de `SWAGGER_PATH`)
+- Swagger UI: `http://localhost:4000/api/docs` (ou valor de `SWAGGER_PATH`; indisponível em produção)
 - RabbitMQ Management: `http://localhost:15672` (guest / guest)
 
 Com a stack completa, o `.env` padrão usa `RABBITMQ_ENABLED=true` e `MONGODB_ENABLED=true` (hostnames `rabbitmq` e `mongodb` na rede Docker).
@@ -101,7 +102,9 @@ docker compose -f docker-compose.yml up --build api
 
 ## Swagger (OpenAPI)
 
-1. Com a API rodando, abra `http://localhost:4000/api/docs` (ajuste host/porta conforme `.env`).
+> Em `NODE_ENV=production`, a UI Swagger **não é exposta** — use o JSON exportado em build ou ambiente de staging.
+
+1. Com a API rodando em desenvolvimento, abra `http://localhost:4000/api/docs` (ajuste host/porta conforme `.env`).
 2. Em **Auth**, execute `POST /auth/login` com o corpo:
 
    ```json
@@ -127,16 +130,24 @@ O documento OpenAPI JSON fica em `/{SWAGGER_PATH}-json` (ex.: `/api/docs-json`).
 | `yarn test:e2e` | HTTP com mocks, sem Docker |
 | `yarn test` | Unitários + e2e |
 | `yarn test:integration` | `AppModule` real com SQL Server e Redis |
-| `yarn test:cov` | Cobertura (projeto unit) |
+| `yarn test:cov` | Cobertura (projeto unit; mínimo 80% lines/statements) |
 | `yarn check` | Biome (lint + format) |
 | `yarn check:fix` | Corrige formatação/lint quando possível |
 
-**Integração:** exige infra rodando:
+**Integração:** exige infra rodando (SQL Server + Redis publicados em `localhost`):
 
 ```bash
 docker compose up sqlserver redis -d
 yarn test:integration
 ```
+
+Os testes de integração **forçam `DB_HOST=localhost` e `REDIS_HOST=localhost`**, mesmo que o `.env` use hostnames Docker (`sqlserver`/`redis`) para a API em container.
+
+| Spec | O que valida |
+|------|----------------|
+| `fleet-flow.integration-spec.ts` | Login → brand → model (`brandId`) → vehicle → CRUD completo |
+| `fleet-referential.integration-spec.ts` | Model sem `brandId` → 400; delete brand com models → 409 |
+| `vehicles-cache.integration-spec.ts` | Cache Redis: warm GET, invalidação POST/PATCH/DELETE |
 
 Se SQL Server ou Redis não estiverem acessíveis, a suíte de integração é ignorada (exit 0) para não quebrar `yarn test` em ambientes sem Docker.
 
@@ -167,11 +178,26 @@ Prefixo global: `API_PREFIX` (padrão `api/v1`).
 
 | Módulo | Rotas (exemplos) |
 |--------|------------------|
-| Auth | `POST /auth/login` (público), `POST /auth/logout` |
-| Brands | CRUD `/brands` |
-| Models | CRUD `/models` |
+| Auth | `POST /auth/login` (público, rate limit), `POST /auth/logout` |
+| Brands | CRUD `/brands` (DELETE admin; bloqueado se houver models) |
+| Models | CRUD `/models` (**`brandId` obrigatório** no create) |
 | Vehicles | CRUD `/vehicles` (cache Redis em GET list/id) |
 | Users | CRUD `/users` (admin) |
+
+### Regras de negócio principais
+
+- **Models:** todo model deve estar associado a uma brand (`brandId` obrigatório; coluna `NOT NULL` no banco).
+- **Brands:** não é possível remover uma brand com models vinculados (`409 Conflict`).
+- **Models:** não é possível remover um model com veículos vinculados (`409 Conflict`).
+- **Vehicles:** cache Redis em listagem/consulta padrão; invalidação automática em create/update/delete. TTL configurável via `REDIS_CACHE_TTL`.
+
+### Segurança HTTP
+
+| Variável | Descrição |
+|----------|-----------|
+| `CORS_ORIGINS` | Origens permitidas (vírgula). Vazio = CORS desabilitado |
+| `THROTTLE_TTL` / `THROTTLE_LIMIT` | Rate limit global (ms / requisições) |
+| `THROTTLE_LOGIN_TTL` / `THROTTLE_LOGIN_LIMIT` | Limite específico para `POST /auth/login` |
 
 Respostas de erro seguem envelope padronizado (`HttpExceptionFilter`).
 
@@ -182,8 +208,10 @@ Respostas de erro seguem envelope padronizado (`HttpExceptionFilter`).
 ```
 src/modules/     # Domínio (auth, brands, models, vehicles, users, …)
 src/database/    # Migrations, seeds, mock JSON
-test/e2e/        # Testes e2e com mocks
-test/integration/# Testes com SQL Server + Redis
+test/common/     # Utilitários compartilhados (ver subpastas e2e/ e integration/)
+test/fixtures/   # Dados/factories para testes (fleet.fixture.ts)
+test/e2e/        # Testes e2e com mocks (HTTP, sem Docker)
+test/integration/# Testes com SQL Server + Redis (AppModule real)
 docker-compose.yml
 ```
 
