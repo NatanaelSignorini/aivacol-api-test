@@ -46,7 +46,12 @@
   },
   "overrides": [
     {
-      "includes": ["**/*.spec.ts", "**/*.e2e-spec.ts", "test/**"],
+      "includes": [
+        "**/*.spec.ts",
+        "**/*.e2e-spec.ts",
+        "**/*.integration.e2e-spec.ts",
+        "test/**"
+      ],
       "javascript": {
         "globals": [
           "describe",

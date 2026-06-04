@@ -16,18 +16,22 @@
     "start:debug": "yarn validate:env && nest start --debug --watch",
     "start:prod": "node dist/main",
     "validate:env": "ts-node -r tsconfig-paths/register scripts/validate-env.ts",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:cov": "jest --coverage",
-    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "db:create": "ts-node -r tsconfig-paths/register src/database/create-database.ts",
+    "test": "yarn test:unit && yarn test:e2e",
+    "test:unit": "jest --selectProjects unit",
+    "test:watch": "jest --selectProjects unit --watch",
+    "test:cov": "jest --selectProjects unit --coverage",
+    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --selectProjects unit --runInBand",
+    "test:e2e": "jest --selectProjects e2e",
+    "test:integration": "jest --selectProjects integration --runInBand --forceExit",
+    "test:e2e:docker": "yarn test:integration",
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
     "migration:generate": "yarn typeorm migration:generate -d src/database/data-source.ts",
     "migration:run": "yarn typeorm migration:run -d src/database/data-source.ts",
     "migration:revert": "yarn typeorm migration:revert -d src/database/data-source.ts",
     "seed": "ts-node -r tsconfig-paths/register ./node_modules/typeorm-extension/bin/cli.mjs seed:run -d src/database/data-source.ts",
-    "docker:up": "docker compose up -d",
-    "docker:down": "docker compose down"
+    "docker:up": "docker compose -f docker-compose.yml up --build api",
+    "docker:down": "docker compose -f docker-compose.yml down"
   },
   "dependencies": {
     "@nestjs/cache-manager": "3.1.2",
@@ -39,6 +43,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "11.4.4",
     "@nestjs/typeorm": "11.0.1",
+    "amqplib": "2.0.1",
     "bcryptjs": "3.0.2",
     "cache-manager": "7.2.8",
     "cache-manager-redis-yet": "5.1.5",
@@ -46,6 +51,7 @@
     "class-validator": "0.15.1",
     "email-validator": "2.0.4",
     "keyv": "5.6.0",
+    "mongodb": "7.2.0",
     "mssql": "12.5.5",
     "passport": "0.7.0",
     "passport-jwt": "4.0.1",
@@ -63,6 +69,7 @@
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
+    "@types/amqplib": "0.10.8",
     "@types/bcryptjs": "2.4.6",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
@@ -77,25 +84,5 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3"
-  },
-  "jest": {
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "ts"
-    ],
-    "rootDir": "src",
-    "testRegex": ".*\\.spec\\.ts$",
-    "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
-    },
-    "collectCoverageFrom": [
-      "**/*.(t|j)s"
-    ],
-    "coverageDirectory": "../coverage",
-    "testEnvironment": "node",
-    "transformIgnorePatterns": [
-      "node_modules/(?!uuid/)"
-    ]
   }
 }
