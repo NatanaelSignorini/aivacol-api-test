@@ -52,10 +52,11 @@
                   "exec": [
                     "if (pm.response.code === 200) {",
                     "  const body = pm.response.json();",
-                    "  pm.environment.set('accessToken', body.accessToken);",
-                    "  pm.collectionVariables.set('accessToken', body.accessToken);",
+                    "  const token = body.data?.login?.accessToken;",
+                    "  pm.environment.set('accessToken', token);",
+                    "  pm.collectionVariables.set('accessToken', token);",
                     "  pm.test('accessToken salvo', () => {",
-                    "    pm.expect(body.accessToken).to.be.a('string').and.not.empty;",
+                    "    pm.expect(token).to.be.a('string').and.not.empty;",
                     "  });",
                     "}"
                   ]
