@@ -22,10 +22,12 @@ export class VehicleEventsPublisher implements OnModuleInit, OnModuleDestroy {
 
   constructor(private readonly configService: ConfigService) {}
 
+  /** Indica se publicação RabbitMQ está habilitada via `RABBITMQ_ENABLED`. */
   private get enabled(): boolean {
     return this.configService.get<boolean>('rabbitmq.enabled') === true;
   }
 
+  /** Nome do exchange topic para eventos de veículos. */
   private get exchange(): string {
     return (
       this.configService.get<string>('rabbitmq.exchange') ??
@@ -33,6 +35,7 @@ export class VehicleEventsPublisher implements OnModuleInit, OnModuleDestroy {
     );
   }
 
+  /** URL AMQP de conexão com RabbitMQ. */
   private get url(): string {
     return (
       this.configService.get<string>('rabbitmq.url') ??
@@ -40,6 +43,10 @@ export class VehicleEventsPublisher implements OnModuleInit, OnModuleDestroy {
     );
   }
 
+  /**
+   * Conecta ao RabbitMQ e declara exchange topic durável.
+   * Falhas são logadas; CRUD de veículos continua sem publicação.
+   */
   async onModuleInit(): Promise<void> {
     if (!this.enabled) {
       return;
@@ -62,6 +69,7 @@ export class VehicleEventsPublisher implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /** Fecha canal e conexão AMQP ao desligar o módulo. */
   async onModuleDestroy(): Promise<void> {
     await this.channel?.close().catch(() => undefined);
     await this.connection?.close().catch(() => undefined);
@@ -69,18 +77,22 @@ export class VehicleEventsPublisher implements OnModuleInit, OnModuleDestroy {
     this.connection = null;
   }
 
+  /** Publica evento `vehicle.created` com snapshot do veículo. */
   async publishCreated(vehicle: VehicleResponseDto): Promise<void> {
     await this.publish(VehicleEventRoutingKey.Created, vehicle);
   }
 
+  /** Publica evento `vehicle.updated` com snapshot atualizado. */
   async publishUpdated(vehicle: VehicleResponseDto): Promise<void> {
     await this.publish(VehicleEventRoutingKey.Updated, vehicle);
   }
 
+  /** Publica evento `vehicle.deleted` com snapshot pré-remoção. */
   async publishDeleted(vehicle: VehicleResponseDto): Promise<void> {
     await this.publish(VehicleEventRoutingKey.Deleted, vehicle);
   }
 
+  /** Serializa mensagem JSON persistente no exchange com routing key do evento. */
   private async publish(
     eventType: VehicleEventRoutingKey,
     vehicle: VehicleResponseDto,

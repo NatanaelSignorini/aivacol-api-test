@@ -8,6 +8,7 @@ import {
 export class CreateUsersTable1748908800000 implements MigrationInterface {
   name = 'CreateUsersTable1748908800000';
 
+  /** Cria tabela `users` com unicidade de nickname/email e FK auto-referenciada em `created_by`. */
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.createTable(
       new Table({
@@ -75,6 +76,7 @@ export class CreateUsersTable1748908800000 implements MigrationInterface {
     );
   }
 
+  /** Remove FK e tabela `users`. */
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.dropForeignKey('users', 'FK_users_created_by');
     await queryRunner.dropTable('users');

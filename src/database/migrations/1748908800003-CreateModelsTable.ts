@@ -8,6 +8,7 @@ import {
 export class CreateModelsTable1748908800003 implements MigrationInterface {
   name = 'CreateModelsTable1748908800003';
 
+  /** Cria tabela `models` com `brand_id NOT NULL` e FKs para `brands` e `users`. */
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.createTable(
       new Table({
@@ -68,6 +69,7 @@ export class CreateModelsTable1748908800003 implements MigrationInterface {
     );
   }
 
+  /** Remove FKs e tabela `models`. */
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.dropForeignKey('models', 'FK_models_created_by');
     await queryRunner.dropForeignKey('models', 'FK_models_brand_id');

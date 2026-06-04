@@ -31,6 +31,10 @@ interface FleetMockFile {
 }
 
 export default class FleetSeeder implements Seeder {
+  /**
+   * Carrega marcas, models e veículos de `fleet.seed.json` de forma idempotente.
+   * Exige admin criado pelo AivacolUserSeeder; normaliza identificadores BR.
+   */
   public async run(
     dataSource: DataSource,
     _factoryManager: SeederFactoryManager,

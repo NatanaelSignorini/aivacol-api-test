@@ -9,6 +9,10 @@ const AIVACOL_EMAIL = 'admin@aivacol.com';
 const AIVACOL_PASSWORD = 'Aivacol123!';
 
 export default class AivacolUserSeeder implements Seeder {
+  /**
+   * Cria usuário admin padrão (`admin@aivacol.com`) se ainda não existir.
+   * Auto-referencia `created_by` com o próprio id do admin.
+   */
   public async run(
     dataSource: DataSource,
     _factoryManager: SeederFactoryManager,

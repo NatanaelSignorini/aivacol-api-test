@@ -15,6 +15,7 @@ const seederOptions: SeederOptions = {
   factories: [],
 };
 
+/** DataSource TypeORM CLI: migrations, entities e seeds para comandos yarn migration/seed. */
 export default new DataSource({
   ...baseOptions,
   ...seederOptions,

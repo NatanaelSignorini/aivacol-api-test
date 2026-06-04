@@ -9,6 +9,10 @@ import {
 export class CreateVehiclesTable1748908800004 implements MigrationInterface {
   name = 'CreateVehiclesTable1748908800004';
 
+  /**
+   * Cria tabela `vehicles` com índices únicos em placa/chassis/renavam.
+   * FKs: `model_id` → `models`, `created_by` → `users`.
+   */
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.createTable(
       new Table({
@@ -112,6 +116,7 @@ export class CreateVehiclesTable1748908800004 implements MigrationInterface {
     );
   }
 
+  /** Remove FKs, índices únicos e tabela `vehicles`. */
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.dropForeignKey('vehicles', 'FK_vehicles_created_by');
     await queryRunner.dropForeignKey('vehicles', 'FK_vehicles_model_id');

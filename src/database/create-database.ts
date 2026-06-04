@@ -11,6 +11,7 @@ import { buildDatabaseEnvConfig } from '../config/database.config';
 
 const DATABASE_NAME_PATTERN = /^[a-zA-Z][a-zA-Z0-9_]*$/;
 
+/** Cria banco SQL Server em `master` se ainda não existir (script de bootstrap Docker). */
 async function createDatabase(): Promise<void> {
   const db = buildDatabaseEnvConfig();
 
