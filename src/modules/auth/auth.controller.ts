@@ -6,6 +6,7 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { Public } from '../../common/decorators/public.decorator';
 import type { ApiDataResponse } from '../../common/interfaces/connection.interface';
 import {
@@ -25,6 +26,12 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
+  @Throttle({
+    default: {
+      limit: Number(process.env.THROTTLE_LOGIN_LIMIT ?? 5),
+      ttl: Number(process.env.THROTTLE_LOGIN_TTL ?? 60000),
+    },
+  })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Authenticate with email and password' })

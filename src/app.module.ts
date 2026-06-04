@@ -2,6 +2,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import appConfig from './config/app.config';
@@ -22,6 +23,18 @@ import { VehiclesModule } from './modules/vehicles/vehicles.module';
       isGlobal: true,
       ignoreEnvFile: true,
       load: [appConfig],
+    }),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        throttlers: [
+          {
+            ttl: configService.get<number>('throttle.ttl') ?? 60000,
+            limit: configService.get<number>('throttle.limit') ?? 100,
+          },
+        ],
+      }),
     }),
     TypeOrmModule.forRootAsync({
       useFactory: typeOrmConfigFactory,
@@ -52,6 +65,10 @@ import { VehiclesModule } from './modules/vehicles/vehicles.module';
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
   ],
 })

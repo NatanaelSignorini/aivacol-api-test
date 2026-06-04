@@ -144,6 +144,11 @@ export const env = {
   REDIS_PORT: envNumber('REDIS_PORT', 6379),
   REDIS_CACHE_TTL: envNumber('REDIS_CACHE_TTL', 300),
   SWAGGER_PATH: envString('SWAGGER_PATH', 'api/docs'),
+  CORS_ORIGINS: envString('CORS_ORIGINS', ''),
+  THROTTLE_TTL: envNumber('THROTTLE_TTL', 60000),
+  THROTTLE_LIMIT: envNumber('THROTTLE_LIMIT', 100),
+  THROTTLE_LOGIN_TTL: envNumber('THROTTLE_LOGIN_TTL', 60000),
+  THROTTLE_LOGIN_LIMIT: envNumber('THROTTLE_LOGIN_LIMIT', 5),
   RABBITMQ_ENABLED: envBoolean('RABBITMQ_ENABLED', false),
   RABBITMQ_URL: envString('RABBITMQ_URL', 'amqp://guest:guest@localhost:5672'),
   RABBITMQ_EXCHANGE: envString('RABBITMQ_EXCHANGE', 'aivacol.vehicles'),
@@ -380,6 +385,26 @@ export const validateEnvironment = (source: EnvSource = process.env): void => {
 
   if (redisCacheTtl < 1) {
     errors.push('REDIS_CACHE_TTL must be greater than 0');
+  }
+
+  const throttleTtl = readNumber(source, 'THROTTLE_TTL') ?? 60000;
+  if (throttleTtl < 1) {
+    errors.push('THROTTLE_TTL must be greater than 0');
+  }
+
+  const throttleLimit = readNumber(source, 'THROTTLE_LIMIT') ?? 100;
+  if (throttleLimit < 1) {
+    errors.push('THROTTLE_LIMIT must be greater than 0');
+  }
+
+  const throttleLoginTtl = readNumber(source, 'THROTTLE_LOGIN_TTL') ?? 60000;
+  if (throttleLoginTtl < 1) {
+    errors.push('THROTTLE_LOGIN_TTL must be greater than 0');
+  }
+
+  const throttleLoginLimit = readNumber(source, 'THROTTLE_LOGIN_LIMIT') ?? 5;
+  if (throttleLoginLimit < 1) {
+    errors.push('THROTTLE_LOGIN_LIMIT must be greater than 0');
   }
 
   if (errors.length > 0) {

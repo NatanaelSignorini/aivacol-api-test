@@ -16,6 +16,15 @@ export default () => ({
   swagger: {
     path: env.SWAGGER_PATH,
   },
+  cors: {
+    origins: env.CORS_ORIGINS,
+  },
+  throttle: {
+    ttl: env.THROTTLE_TTL,
+    limit: env.THROTTLE_LIMIT,
+    loginTtl: env.THROTTLE_LOGIN_TTL,
+    loginLimit: env.THROTTLE_LOGIN_LIMIT,
+  },
   rabbitmq: {
     enabled: env.RABBITMQ_ENABLED,
     url: env.RABBITMQ_URL,
