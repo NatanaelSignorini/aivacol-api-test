@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
 import * as amqp from 'amqplib';
@@ -51,6 +52,9 @@ describe('VehicleEventsPublisher', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
     publishMock = jest.fn().mockReturnValue(true);
     assertExchangeMock = jest.fn().mockResolvedValue(undefined);
 
@@ -62,6 +66,10 @@ describe('VehicleEventsPublisher', () => {
       }),
       close: jest.fn().mockResolvedValue(undefined),
     });
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it('does not connect when RabbitMQ is disabled', async () => {
@@ -120,5 +128,65 @@ describe('VehicleEventsPublisher', () => {
       expect.any(Buffer),
       expect.objectContaining({ persistent: true }),
     );
+  });
+
+  it('logs and skips publishing when connection fails on init', async () => {
+    (amqp.connect as jest.Mock).mockRejectedValueOnce(
+      new Error('connection refused'),
+    );
+
+    publisher = await createModule({ enabled: true });
+    await publisher.onModuleInit();
+    await publisher.publishCreated(vehicleSnapshot);
+
+    expect(Logger.prototype.error).toHaveBeenCalled();
+    expect(publishMock).not.toHaveBeenCalled();
+  });
+
+  it('warns when publish buffer is full', async () => {
+    publishMock.mockReturnValueOnce(false);
+    publisher = await createModule({ enabled: true });
+    await publisher.onModuleInit();
+
+    await publisher.publishCreated(vehicleSnapshot);
+
+    expect(Logger.prototype.warn).toHaveBeenCalledWith(
+      expect.stringContaining(VehicleEventRoutingKey.Created),
+    );
+  });
+
+  it('logs publish errors without throwing', async () => {
+    publishMock.mockImplementationOnce(() => {
+      throw new Error('publish failed');
+    });
+    publisher = await createModule({ enabled: true });
+    await publisher.onModuleInit();
+
+    await expect(
+      publisher.publishUpdated(vehicleSnapshot),
+    ).resolves.toBeUndefined();
+
+    expect(Logger.prototype.error).toHaveBeenCalled();
+  });
+
+  it('closes channel and connection on module destroy', async () => {
+    const channelClose = jest.fn().mockResolvedValue(undefined);
+    const connectionClose = jest.fn().mockResolvedValue(undefined);
+
+    (amqp.connect as jest.Mock).mockResolvedValueOnce({
+      createChannel: jest.fn().mockResolvedValue({
+        assertExchange: assertExchangeMock,
+        publish: publishMock,
+        close: channelClose,
+      }),
+      close: connectionClose,
+    });
+
+    publisher = await createModule({ enabled: true });
+    await publisher.onModuleInit();
+    await publisher.onModuleDestroy();
+
+    expect(channelClose).toHaveBeenCalled();
+    expect(connectionClose).toHaveBeenCalled();
   });
 });

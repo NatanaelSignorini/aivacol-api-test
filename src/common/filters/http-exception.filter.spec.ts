@@ -4,6 +4,7 @@ import {
   HttpStatus,
   NotFoundException,
 } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpExceptionFilter } from './http-exception.filter';
 
@@ -26,10 +27,15 @@ describe('HttpExceptionFilter', () => {
   };
 
   beforeEach(() => {
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     configService = {
       get: jest.fn().mockReturnValue('test'),
     };
     filter = new HttpExceptionFilter(configService as unknown as ConfigService);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it('formats HttpException with statusCode, message, error, timestamp, path', () => {

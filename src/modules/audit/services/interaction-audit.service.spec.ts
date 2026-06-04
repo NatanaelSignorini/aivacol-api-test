@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { MongoClient } from 'mongodb';
@@ -22,7 +23,9 @@ describe('InteractionAuditService', () => {
     };
 
     (MongoClient as jest.Mock).mockImplementation(() => ({
-      connect: jest.fn().mockResolvedValue(undefined),
+      connect: mongodb.connectFails
+        ? jest.fn().mockRejectedValue(new Error('connection refused'))
+        : jest.fn().mockResolvedValue(undefined),
       close: jest.fn().mockResolvedValue(undefined),
       db: jest.fn().mockReturnValue({
         collection: jest.fn().mockReturnValue(collection),
@@ -53,6 +56,12 @@ describe('InteractionAuditService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it('does not connect when MongoDB is disabled', async () => {
@@ -129,5 +138,37 @@ describe('InteractionAuditService', () => {
     expect(clientInstance.db().collection).toHaveBeenCalledWith(
       INTERACTION_AUDIT_COLLECTION,
     );
+  });
+
+  it('logs and skips recording when MongoDB connection fails', async () => {
+    service = await createModule({ enabled: true, connectFails: true });
+    await service.onModuleInit();
+
+    await service.record({
+      occurredAt: new Date().toISOString(),
+      method: 'GET',
+      path: '/api/v1/vehicles',
+      statusCode: 200,
+      durationMs: 1,
+      userId: null,
+      userEmail: null,
+      userRole: null,
+    });
+
+    expect(Logger.prototype.error).toHaveBeenCalled();
+    expect(insertOneMock).not.toHaveBeenCalled();
+  });
+
+  it('closes client on module destroy', async () => {
+    service = await createModule({ enabled: true });
+    await service.onModuleInit();
+
+    const clientInstance = (MongoClient as jest.Mock).mock.results[0].value as {
+      close: jest.Mock;
+    };
+
+    await service.onModuleDestroy();
+
+    expect(clientInstance.close).toHaveBeenCalled();
   });
 });

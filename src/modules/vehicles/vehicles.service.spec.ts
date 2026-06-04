@@ -6,6 +6,7 @@ import type { Cache } from 'cache-manager';
 import type { Repository } from 'typeorm';
 import { DEFAULT_PAGE_SIZE } from '../../common/dto/pagination-query.dto';
 import { VehicleEventsPublisher } from '../messaging/publishers/vehicle-events.publisher';
+import { Brand } from '../brands/entities/brand.entity';
 import { Model } from '../models/entities/model.entity';
 import { Vehicle } from './entities/vehicle.entity';
 import { VehiclesService } from './vehicles.service';
@@ -38,14 +39,25 @@ describe('VehiclesService', () => {
   >;
 
   const userId = '018f1234-5678-7890-abcd-ef1234567890';
+  const brandId = '018f1234-5678-7890-abcd-ef1234567893';
   const modelId = '018f1234-5678-7890-abcd-ef1234567891';
   const vehicleId = '018f1234-5678-7890-abcd-ef1234567892';
+
+  const existingBrand: Brand = {
+    id: brandId,
+    name: 'Toyota',
+    createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    createdBy: userId,
+    creator: undefined,
+    assignId: jest.fn(),
+  };
 
   const existingModel: Model = {
     id: modelId,
     name: 'Corolla',
-    brandId: null,
-    brand: null,
+    brandId,
+    brand: existingBrand,
     createdAt: new Date('2026-01-01T00:00:00.000Z'),
     updatedAt: new Date('2026-01-01T00:00:00.000Z'),
     createdBy: userId,
@@ -98,7 +110,13 @@ describe('VehiclesService', () => {
       createdAt: existingModel.createdAt,
       updatedAt: existingModel.updatedAt,
       createdBy: userId,
-      brand: null,
+      brand: {
+        id: brandId,
+        name: 'Toyota',
+        createdAt: existingBrand.createdAt,
+        updatedAt: existingBrand.updatedAt,
+        createdBy: userId,
+      },
     },
   };
 
@@ -332,6 +350,72 @@ describe('VehiclesService', () => {
           relations: { model: true },
         }),
       );
+      expect(cacheManager.get).not.toHaveBeenCalled();
+      expect(cacheManager.set).not.toHaveBeenCalled();
+    });
+
+    it('does not use cache when list filters are applied', async () => {
+      vehiclesRepository.findAndCount.mockResolvedValue([[existingVehicle], 1]);
+
+      await service.findAll({
+        first: DEFAULT_PAGE_SIZE,
+        skip: 0,
+        licensePlate: 'ABC',
+      });
+
+      expect(cacheManager.get).not.toHaveBeenCalled();
+      expect(cacheManager.set).not.toHaveBeenCalled();
+    });
+
+    it('does not use cache when pagination skip is non-zero', async () => {
+      vehiclesRepository.findAndCount.mockResolvedValue([[existingVehicle], 1]);
+
+      await service.findAll({
+        first: DEFAULT_PAGE_SIZE,
+        skip: 10,
+      });
+
+      expect(cacheManager.get).not.toHaveBeenCalled();
+      expect(cacheManager.set).not.toHaveBeenCalled();
+    });
+
+    it('applies modelId, year and brandId filters', async () => {
+      vehiclesRepository.findAndCount.mockResolvedValue([[existingVehicle], 1]);
+
+      await service.findAll({
+        first: DEFAULT_PAGE_SIZE,
+        skip: 0,
+        modelId,
+        year: 2024,
+        brandId,
+      });
+
+      expect(vehiclesRepository.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            modelId,
+            year: 2024,
+            model: { brandId },
+          },
+        }),
+      );
+      expect(cacheManager.get).not.toHaveBeenCalled();
+    });
+
+    it('loads nested brand relation when includeBrand is true', async () => {
+      vehiclesRepository.findAndCount.mockResolvedValue([[existingVehicle], 1]);
+
+      await service.findAll({
+        first: DEFAULT_PAGE_SIZE,
+        skip: 0,
+        includeBrand: true,
+      });
+
+      expect(vehiclesRepository.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          relations: { model: { brand: true } },
+        }),
+      );
     });
   });
 
@@ -434,6 +518,70 @@ describe('VehiclesService', () => {
       await expect(
         service.update(vehicleId, { chassis: '9BWZZZ377VT004999' }),
       ).rejects.toThrow(ConflictException);
+    });
+
+    it('updates modelId after validating model exists', async () => {
+      const newModelId = '018f1234-5678-7890-abcd-ef8888888888';
+      modelsRepository.findOne.mockResolvedValue({
+        ...existingModel,
+        id: newModelId,
+      });
+      vehiclesRepository.findOne
+        .mockResolvedValueOnce(existingVehicle)
+        .mockResolvedValueOnce({
+          ...existingVehicle,
+          modelId: newModelId,
+        });
+      vehiclesRepository.save.mockImplementation(async (vehicle) => vehicle);
+
+      const result = await service.update(vehicleId, { modelId: newModelId });
+
+      expect(modelsRepository.findOne).toHaveBeenCalledWith({
+        where: { id: newModelId },
+      });
+      expect(vehiclesRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ modelId: newModelId }),
+      );
+      expect(result.id).toBe(vehicleId);
+    });
+
+    it('updates normalized license plate and renavam', async () => {
+      vehiclesRepository.findOne
+        .mockResolvedValueOnce(existingVehicle)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({
+          ...existingVehicle,
+          licensePlate: 'XYZ9K88',
+          renavam: '98765432109',
+        });
+      vehiclesRepository.save.mockImplementation(async (vehicle) => vehicle);
+
+      const result = await service.update(vehicleId, {
+        licensePlate: 'xyz-9k88',
+        renavam: '98765432109',
+      });
+
+      expect(vehiclesRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          licensePlate: 'XYZ9K88',
+          renavam: '98765432109',
+        }),
+      );
+      expect(result.licensePlate).toBe('XYZ9K88');
+      expect(result.renavam).toBe('98765432109');
+    });
+
+    it('rejects update when new modelId does not exist', async () => {
+      modelsRepository.findOne.mockResolvedValue(null);
+      vehiclesRepository.findOne.mockResolvedValueOnce(existingVehicle);
+
+      await expect(
+        service.update(vehicleId, {
+          modelId: '018f1234-5678-7890-abcd-ef7777777777',
+        }),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 

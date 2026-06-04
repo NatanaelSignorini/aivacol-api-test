@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import type { Repository } from 'typeorm';
+import { Like, type Repository } from 'typeorm';
 import { passwordEncoder } from '../../common/decorators/password-encoder';
 import { DEFAULT_PAGE_SIZE } from '../../common/dto/pagination-query.dto';
 import { User } from './entities/user.entity';
@@ -185,7 +185,10 @@ describe('UsersService', () => {
     it('returns paginated users without password hash', async () => {
       repository.findAndCount.mockResolvedValue([[existingUser], 1]);
 
-      const result = await service.findAll({ first: DEFAULT_PAGE_SIZE, skip: 0 });
+      const result = await service.findAll({
+        first: DEFAULT_PAGE_SIZE,
+        skip: 0,
+      });
 
       expect(repository.findAndCount).toHaveBeenCalledWith({
         where: {},
@@ -196,6 +199,31 @@ describe('UsersService', () => {
       expect(result.nodes[0]).not.toHaveProperty('passwordHash');
       expect(result.nodes[0].nickname).toBe('operator1');
       expect(result.totalCount).toBe(1);
+    });
+
+    it('applies list filters for email, name, nickname and role', async () => {
+      repository.findAndCount.mockResolvedValue([[existingUser], 1]);
+
+      await service.findAll({
+        first: DEFAULT_PAGE_SIZE,
+        skip: 0,
+        email: ' Operator1@AIVACOL.com ',
+        name: ' Fleet ',
+        nickname: ' operator ',
+        role: UserRole.Operator,
+      });
+
+      expect(repository.findAndCount).toHaveBeenCalledWith({
+        where: {
+          email: Like('%operator1@aivacol.com%'),
+          name: Like('%Fleet%'),
+          nickname: Like('%operator%'),
+          role: UserRole.Operator,
+        },
+        order: { nickname: 'ASC' },
+        skip: 0,
+        take: DEFAULT_PAGE_SIZE,
+      });
     });
   });
 
@@ -249,6 +277,53 @@ describe('UsersService', () => {
         service.update(userId, { email: 'taken@aivacol.com' }),
       ).rejects.toThrow(ConflictException);
     });
+
+    it('updates nickname, email and role with normalization', async () => {
+      repository.findOne
+        .mockResolvedValueOnce(existingUser)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null);
+      repository.save.mockImplementation(async (user) => user);
+
+      const result = await service.update(userId, {
+        nickname: ' new-nick ',
+        email: ' NEW@AIVACOL.COM ',
+        role: UserRole.Admin,
+      });
+
+      expect(result.nickname).toBe('new-nick');
+      expect(result.email).toBe('new@aivacol.com');
+      expect(result.role).toBe(UserRole.Admin);
+    });
+
+    it('rejects duplicate nickname on update', async () => {
+      const otherUser: User = {
+        ...existingUser,
+        id: '018f1234-5678-7890-abcd-ef1234567892',
+        nickname: 'taken',
+      };
+
+      repository.findOne
+        .mockResolvedValueOnce(existingUser)
+        .mockResolvedValueOnce(otherUser);
+
+      await expect(
+        service.update(userId, { nickname: 'taken' }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('allows keeping the same nickname for the same user', async () => {
+      repository.findOne
+        .mockResolvedValueOnce(existingUser)
+        .mockResolvedValueOnce(existingUser);
+      repository.save.mockImplementation(async (user) => user);
+
+      const result = await service.update(userId, {
+        nickname: 'operator1',
+      });
+
+      expect(result.nickname).toBe('operator1');
+    });
   });
 
   describe('remove', () => {
@@ -264,6 +339,14 @@ describe('UsersService', () => {
     it('rejects self-delete with BadRequestException', async () => {
       await expect(service.remove(adminId, adminId)).rejects.toThrow(
         BadRequestException,
+      );
+    });
+
+    it('throws NotFoundException when user does not exist', async () => {
+      repository.findOne.mockResolvedValue(null);
+
+      await expect(service.remove(userId, adminId)).rejects.toThrow(
+        NotFoundException,
       );
     });
   });
