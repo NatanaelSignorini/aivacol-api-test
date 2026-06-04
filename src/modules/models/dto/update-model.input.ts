@@ -20,11 +20,10 @@ export class UpdateModelInput {
   @ApiPropertyOptional({
     example: UUID_V7_EXAMPLE,
     format: 'uuid',
-    nullable: true,
-    description: 'Set null to detach brand',
+    description: 'Reassign model to another brand',
   })
-  @ValidateIf((input: UpdateModelInput) => input.brandId !== null)
-  @IsOptional()
+  @ValidateIf((_, value) => value !== undefined)
+  @IsNotEmpty()
   @IsUUID()
-  brandId?: string | null;
+  brandId?: string;
 }

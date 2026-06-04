@@ -26,7 +26,7 @@ export class CreateModelsTable1748908800003 implements MigrationInterface {
           {
             name: 'brand_id',
             type: 'uniqueidentifier',
-            isNullable: true,
+            isNullable: false,
           },
           {
             name: 'created_at',

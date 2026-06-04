@@ -1,11 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  IsUUID,
-  MaxLength,
-} from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty, IsString, IsUUID, MaxLength } from 'class-validator';
 import { UUID_V7_EXAMPLE } from '../../../common/swagger/swagger.constants';
 
 export class CreateModelInput {
@@ -15,12 +9,12 @@ export class CreateModelInput {
   @MaxLength(255)
   name!: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     example: UUID_V7_EXAMPLE,
     format: 'uuid',
-    description: 'Optional brand association',
+    description: 'Brand that owns this model',
   })
-  @IsOptional()
   @IsUUID()
-  brandId?: string;
+  @IsNotEmpty()
+  brandId!: string;
 }

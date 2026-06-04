@@ -3,6 +3,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import type { Repository } from 'typeorm';
 import { DEFAULT_PAGE_SIZE } from '../../common/dto/pagination-query.dto';
+import { ModelsService } from '../models/models.service';
 import { BrandsService } from './brands.service';
 import { Brand } from './entities/brand.entity';
 
@@ -14,6 +15,7 @@ describe('BrandsService', () => {
       'create' | 'save' | 'find' | 'findAndCount' | 'findOne' | 'remove'
     >
   >;
+  let modelsService: jest.Mocked<Pick<ModelsService, 'countByBrandId'>>;
 
   const userId = '018f1234-5678-7890-abcd-ef1234567890';
   const brandId = '018f1234-5678-7890-abcd-ef1234567891';
@@ -38,12 +40,20 @@ describe('BrandsService', () => {
       remove: jest.fn(),
     };
 
+    modelsService = {
+      countByBrandId: jest.fn().mockResolvedValue(0),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BrandsService,
         {
           provide: getRepositoryToken(Brand),
           useValue: repository,
+        },
+        {
+          provide: ModelsService,
+          useValue: modelsService,
         },
       ],
     }).compile();
@@ -93,7 +103,10 @@ describe('BrandsService', () => {
     it('returns paginated brands', async () => {
       repository.findAndCount.mockResolvedValue([[existingBrand], 1]);
 
-      const result = await service.findAll({ first: DEFAULT_PAGE_SIZE, skip: 0 });
+      const result = await service.findAll({
+        first: DEFAULT_PAGE_SIZE,
+        skip: 0,
+      });
 
       expect(repository.findAndCount).toHaveBeenCalledWith({
         where: {},
@@ -161,6 +174,14 @@ describe('BrandsService', () => {
       await service.remove(brandId);
 
       expect(repository.remove).toHaveBeenCalledWith(existingBrand);
+    });
+
+    it('rejects remove when models reference the brand', async () => {
+      repository.findOne.mockResolvedValue(existingBrand);
+      modelsService.countByBrandId.mockResolvedValue(2);
+
+      await expect(service.remove(brandId)).rejects.toThrow(ConflictException);
+      expect(repository.remove).not.toHaveBeenCalled();
     });
   });
 });

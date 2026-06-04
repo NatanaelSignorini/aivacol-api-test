@@ -1,7 +1,7 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import type { Repository } from 'typeorm';
+import { Like, type Repository } from 'typeorm';
 import { DEFAULT_PAGE_SIZE } from '../../common/dto/pagination-query.dto';
 import { Brand } from '../brands/entities/brand.entity';
 import { VehiclesService } from '../vehicles/vehicles.service';
@@ -13,7 +13,13 @@ describe('ModelsService', () => {
   let modelsRepository: jest.Mocked<
     Pick<
       Repository<Model>,
-      'create' | 'save' | 'find' | 'findAndCount' | 'findOne' | 'remove'
+      | 'create'
+      | 'save'
+      | 'find'
+      | 'findAndCount'
+      | 'findOne'
+      | 'remove'
+      | 'count'
     >
   >;
   let brandsRepository: jest.Mocked<Pick<Repository<Brand>, 'findOne'>>;
@@ -53,6 +59,7 @@ describe('ModelsService', () => {
       findAndCount: jest.fn(),
       findOne: jest.fn(),
       remove: jest.fn(),
+      count: jest.fn(),
     };
 
     brandsRepository = {
@@ -86,7 +93,8 @@ describe('ModelsService', () => {
   });
 
   describe('create', () => {
-    it('creates model with createdBy from authenticated user', async () => {
+    it('creates model with brandId and createdBy from authenticated user', async () => {
+      brandsRepository.findOne.mockResolvedValue(existingBrand);
       modelsRepository.create.mockImplementation((data) =>
         Object.assign(new Model(), data),
       );
@@ -96,17 +104,13 @@ describe('ModelsService', () => {
         createdAt: existingModel.createdAt,
         updatedAt: existingModel.updatedAt,
       }));
-      modelsRepository.findOne.mockResolvedValue({
-        ...existingModel,
-        brandId: null,
-        brand: null,
-      });
+      modelsRepository.findOne.mockResolvedValue(existingModel);
 
-      const result = await service.create({ name: 'Corolla' }, userId);
+      const result = await service.create({ name: 'Corolla', brandId }, userId);
 
       expect(modelsRepository.create).toHaveBeenCalledWith({
         name: 'Corolla',
-        brandId: null,
+        brandId,
         createdBy: userId,
       });
       expect(result).toMatchObject({
@@ -179,6 +183,28 @@ describe('ModelsService', () => {
       expect(result.nodes).toHaveLength(1);
       expect(result.nodes[0].name).toBe('Corolla');
       expect(result.nodes[0].brand).toBeUndefined();
+    });
+
+    it('applies name and brandId filters', async () => {
+      modelsRepository.findAndCount.mockResolvedValue([[existingModel], 1]);
+
+      await service.findAll({
+        first: DEFAULT_PAGE_SIZE,
+        skip: 0,
+        name: ' Corolla ',
+        brandId,
+      });
+
+      expect(modelsRepository.findAndCount).toHaveBeenCalledWith({
+        where: {
+          name: Like('%Corolla%'),
+          brandId,
+        },
+        relations: undefined,
+        order: { name: 'ASC' },
+        skip: 0,
+        take: DEFAULT_PAGE_SIZE,
+      });
     });
 
     it('loads brand relation when includeBrand is true', async () => {
@@ -295,6 +321,19 @@ describe('ModelsService', () => {
 
       await expect(service.remove(modelId)).rejects.toThrow(ConflictException);
       expect(modelsRepository.remove).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('countByBrandId', () => {
+    it('returns model count for brand', async () => {
+      modelsRepository.count.mockResolvedValue(2);
+
+      const count = await service.countByBrandId(brandId);
+
+      expect(modelsRepository.count).toHaveBeenCalledWith({
+        where: { brandId },
+      });
+      expect(count).toBe(2);
     });
   });
 });

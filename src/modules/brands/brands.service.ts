@@ -8,6 +8,7 @@ import { type FindOptionsWhere, Like, Repository } from 'typeorm';
 import type { Connection } from '../../common/interfaces/connection.interface';
 import type { EntityId } from '../../common/types/entity-id.type';
 import { toConnection } from '../../common/utils/api-response.util';
+import { ModelsService } from '../models/models.service';
 import { BrandResponseDto } from './dto/brand-response.dto';
 import type { BrandsListQueryDto } from './dto/brands-list-query.dto';
 import type { CreateBrandInput } from './dto/create-brand.input';
@@ -19,6 +20,7 @@ export class BrandsService {
   constructor(
     @InjectRepository(Brand)
     private readonly brandsRepository: Repository<Brand>,
+    private readonly modelsService: ModelsService,
   ) {}
 
   async create(
@@ -84,6 +86,14 @@ export class BrandsService {
 
   async remove(id: EntityId): Promise<void> {
     const brand = await this.findEntityOrFail(id);
+    const modelCount = await this.modelsService.countByBrandId(id);
+
+    if (modelCount > 0) {
+      throw new ConflictException(
+        `Brand with id "${id}" cannot be removed while models reference it`,
+      );
+    }
+
     await this.brandsRepository.remove(brand);
   }
 

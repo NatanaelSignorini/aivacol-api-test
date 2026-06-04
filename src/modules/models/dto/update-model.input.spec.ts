@@ -17,14 +17,14 @@ describe('UpdateModelInput', () => {
     expect(errors).toHaveLength(0);
   });
 
-  it('accepts brandId null to detach brand', async () => {
-    const errors = await validateInput({ brandId: null });
-    expect(errors).toHaveLength(0);
-  });
-
   it('accepts valid brandId', async () => {
     const errors = await validateInput({ brandId: UUID_V7_EXAMPLE });
     expect(errors).toHaveLength(0);
+  });
+
+  it('rejects null brandId', async () => {
+    const errors = await validateInput({ brandId: null });
+    expect(errors.some((e) => e.property === 'brandId')).toBe(true);
   });
 
   it('rejects empty name when provided', async () => {

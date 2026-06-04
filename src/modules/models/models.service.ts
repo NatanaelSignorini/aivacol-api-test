@@ -13,15 +13,15 @@ import {
 import type { Connection } from '../../common/interfaces/connection.interface';
 import type { EntityId } from '../../common/types/entity-id.type';
 import { toConnection } from '../../common/utils/api-response.util';
+import { BrandResponseDto } from '../brands/dto/brand-response.dto';
 import { Brand } from '../brands/entities/brand.entity';
 import { VehiclesService } from '../vehicles/vehicles.service';
 import type { CreateModelInput } from './dto/create-model.input';
-import { BrandResponseDto } from '../brands/dto/brand-response.dto';
 import { ModelResponseDto } from './dto/model-response.dto';
 import {
-  resolveModelIncludeOptions,
   type ModelIncludeOptions,
   type ModelsIncludeQueryDto,
+  resolveModelIncludeOptions,
 } from './dto/models-include-query.dto';
 import type { ModelsListQueryDto } from './dto/models-list-query.dto';
 import type { UpdateModelInput } from './dto/update-model.input';
@@ -42,13 +42,11 @@ export class ModelsService {
     createdBy: EntityId,
     includeQuery: ModelsIncludeQueryDto = {},
   ): Promise<ModelResponseDto> {
-    if (input.brandId !== undefined) {
-      await this.assertBrandExists(input.brandId);
-    }
+    await this.assertBrandExists(input.brandId);
 
     const model = this.modelsRepository.create({
       name: input.name.trim(),
-      brandId: input.brandId ?? null,
+      brandId: input.brandId,
       createdBy,
     });
 
@@ -113,10 +111,7 @@ export class ModelsService {
     }
 
     if (input.brandId !== undefined) {
-      if (input.brandId !== null) {
-        await this.assertBrandExists(input.brandId);
-      }
-
+      await this.assertBrandExists(input.brandId);
       model.brandId = input.brandId;
     }
 
@@ -126,6 +121,10 @@ export class ModelsService {
       await this.findEntityOrFail(id, includeOptions),
       includeOptions,
     );
+  }
+
+  async countByBrandId(brandId: EntityId): Promise<number> {
+    return this.modelsRepository.count({ where: { brandId } });
   }
 
   async remove(id: EntityId): Promise<void> {
@@ -202,7 +201,7 @@ export class ModelsService {
     };
 
     if (includeOptions.includeBrand) {
-      response.brand = model.brand ? this.toBrandResponse(model.brand) : null;
+      response.brand = this.toBrandResponse(model.brand);
     }
 
     return response;

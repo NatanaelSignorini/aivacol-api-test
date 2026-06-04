@@ -8,10 +8,10 @@ export class Model extends BaseEntity {
   @Column()
   name: string;
 
-  @Column({ name: 'brand_id', type: 'uuid', nullable: true })
-  brandId: EntityId | null;
+  @Column({ name: 'brand_id', type: 'uuid' })
+  brandId: EntityId;
 
-  @ManyToOne(() => Brand, { nullable: true })
+  @ManyToOne(() => Brand)
   @JoinColumn({ name: 'brand_id' })
-  brand: Brand | null;
+  brand: Brand;
 }

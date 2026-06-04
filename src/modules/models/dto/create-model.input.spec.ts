@@ -12,17 +12,17 @@ async function validateInput(payload: object) {
 }
 
 describe('CreateModelInput', () => {
-  it('accepts model without brand', async () => {
-    const errors = await validateInput({ name: 'Corolla' });
-    expect(errors).toHaveLength(0);
-  });
-
   it('accepts model with brandId', async () => {
     const errors = await validateInput({
       name: 'Corolla',
       brandId: UUID_V7_EXAMPLE,
     });
     expect(errors).toHaveLength(0);
+  });
+
+  it('rejects model without brandId', async () => {
+    const errors = await validateInput({ name: 'Corolla' });
+    expect(errors.some((e) => e.property === 'brandId')).toBe(true);
   });
 
   it('rejects missing name', async () => {

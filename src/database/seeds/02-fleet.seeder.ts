@@ -20,7 +20,7 @@ const FLEET_SEED_PATH = join(__dirname, '../seed-data/fleet.seed.json');
 interface FleetMockFile {
   version: number;
   brands: Array<{ name: string }>;
-  models: Array<{ name: string; brand?: string }>;
+  models: Array<{ name: string; brand: string }>;
   vehicles: Array<{
     licensePlate: string;
     chassis: string;
@@ -90,9 +90,9 @@ export default class FleetSeeder implements Seeder {
         continue;
       }
 
-      const brandId = entry.brand ? (brandIds.get(entry.brand) ?? null) : null;
+      const brandId = brandIds.get(entry.brand);
 
-      if (entry.brand && brandId === null) {
+      if (!brandId) {
         throw new NotFoundException(
           `Brand "${entry.brand}" not found for model "${entry.name}"`,
         );

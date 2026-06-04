@@ -7,7 +7,12 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { Cache } from 'cache-manager';
-import { type FindOptionsRelations, type FindOptionsWhere, Like, Repository } from 'typeorm';
+import {
+  type FindOptionsRelations,
+  type FindOptionsWhere,
+  Like,
+  Repository,
+} from 'typeorm';
 import { DEFAULT_PAGE_SIZE } from '../../common/dto/pagination-query.dto';
 import type { Connection } from '../../common/interfaces/connection.interface';
 import type { EntityId } from '../../common/types/entity-id.type';
@@ -17,13 +22,13 @@ import {
   normalizeLicensePlate,
   normalizeRenavam,
 } from '../../common/validators/vehicle-identifiers.validator';
+import { BrandResponseDto } from '../brands/dto/brand-response.dto';
 import { Brand } from '../brands/entities/brand.entity';
 import { VehicleEventsPublisher } from '../messaging/publishers/vehicle-events.publisher';
+import { ModelResponseDto } from '../models/dto/model-response.dto';
 import { Model } from '../models/entities/model.entity';
 import type { CreateVehicleInput } from './dto/create-vehicle.input';
 import type { UpdateVehicleInput } from './dto/update-vehicle.input';
-import { BrandResponseDto } from '../brands/dto/brand-response.dto';
-import { ModelResponseDto } from '../models/dto/model-response.dto';
 import { VehicleResponseDto } from './dto/vehicle-response.dto';
 import {
   resolveVehicleIncludeOptions,
@@ -194,10 +199,7 @@ export class VehiclesService {
   }
 
   private canUseItemCache(includeOptions: VehicleIncludeOptions): boolean {
-    return (
-      !includeOptions.includeModel &&
-      !includeOptions.includeBrand
-    );
+    return !includeOptions.includeModel && !includeOptions.includeBrand;
   }
 
   async update(
@@ -387,9 +389,7 @@ export class VehiclesService {
     };
 
     if (includeOptions.includeBrand) {
-      response.brand = model.brand
-        ? this.toBrandResponse(model.brand)
-        : null;
+      response.brand = model.brand ? this.toBrandResponse(model.brand) : null;
     }
 
     return response;
