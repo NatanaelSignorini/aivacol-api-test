@@ -6,9 +6,9 @@ import type { Cache } from 'cache-manager';
 import type { Repository } from 'typeorm';
 import { DEFAULT_PAGE_SIZE } from '../../common/dto/pagination-query.dto';
 import { Brand } from '../brands/entities/brand.entity';
-import { VehicleEventsPublisher } from '../messaging/publishers/vehicle-events.publisher';
 import { Model } from '../models/entities/model.entity';
 import { Vehicle } from './entities/vehicle.entity';
+import { VehicleEventsPublisher } from './publishers/vehicle-events.publisher';
 import { VehiclesService } from './vehicles.service';
 import {
   VEHICLES_LIST_CACHE_KEY,

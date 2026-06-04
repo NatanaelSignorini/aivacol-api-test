@@ -2,8 +2,8 @@ import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
 import * as amqp from 'amqplib';
-import type { VehicleResponseDto } from '../../vehicles/dto/vehicle-response.dto';
 import { VehicleEventRoutingKey } from '../constants/vehicle-events.constants';
+import type { VehicleResponseDto } from '../dto/vehicle-response.dto';
 import { VehicleEventsPublisher } from './vehicle-events.publisher';
 
 jest.mock('amqplib');
@@ -26,7 +26,7 @@ describe('VehicleEventsPublisher', () => {
   let publishMock: jest.Mock;
   let assertExchangeMock: jest.Mock;
 
-  const createModule = async (rabbitmq: Record<string, unknown>) => {
+  const createModule = async (rabbitmq: Record<string, unknown> = {}) => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         VehicleEventsPublisher,
@@ -35,7 +35,6 @@ describe('VehicleEventsPublisher', () => {
           useValue: {
             get: jest.fn((key: string) => {
               const map: Record<string, unknown> = {
-                'rabbitmq.enabled': rabbitmq.enabled ?? false,
                 'rabbitmq.url':
                   rabbitmq.url ?? 'amqp://guest:guest@localhost:5672',
                 'rabbitmq.exchange': rabbitmq.exchange ?? 'aivacol.vehicles',
@@ -72,17 +71,21 @@ describe('VehicleEventsPublisher', () => {
     jest.restoreAllMocks();
   });
 
-  it('does not connect when RabbitMQ is disabled', async () => {
-    publisher = await createModule({ enabled: false });
+  it('connects and declares exchange on init', async () => {
+    publisher = await createModule();
     await publisher.onModuleInit();
     await publisher.publishCreated(vehicleSnapshot);
 
-    expect(amqp.connect).not.toHaveBeenCalled();
-    expect(publishMock).not.toHaveBeenCalled();
+    expect(amqp.connect).toHaveBeenCalled();
+    expect(assertExchangeMock).toHaveBeenCalledWith(
+      'aivacol.vehicles',
+      'topic',
+      { durable: true },
+    );
   });
 
-  it('publishes created event with routing key when enabled', async () => {
-    publisher = await createModule({ enabled: true });
+  it('publishes created event with routing key', async () => {
+    publisher = await createModule();
     await publisher.onModuleInit();
     await publisher.publishCreated(vehicleSnapshot);
 
@@ -108,7 +111,7 @@ describe('VehicleEventsPublisher', () => {
   });
 
   it('publishes updated and deleted routing keys', async () => {
-    publisher = await createModule({ enabled: true });
+    publisher = await createModule();
     await publisher.onModuleInit();
 
     await publisher.publishUpdated(vehicleSnapshot);
@@ -135,7 +138,7 @@ describe('VehicleEventsPublisher', () => {
       new Error('connection refused'),
     );
 
-    publisher = await createModule({ enabled: true });
+    publisher = await createModule();
     await publisher.onModuleInit();
     await publisher.publishCreated(vehicleSnapshot);
 
@@ -145,7 +148,7 @@ describe('VehicleEventsPublisher', () => {
 
   it('warns when publish buffer is full', async () => {
     publishMock.mockReturnValueOnce(false);
-    publisher = await createModule({ enabled: true });
+    publisher = await createModule();
     await publisher.onModuleInit();
 
     await publisher.publishCreated(vehicleSnapshot);
@@ -159,7 +162,7 @@ describe('VehicleEventsPublisher', () => {
     publishMock.mockImplementationOnce(() => {
       throw new Error('publish failed');
     });
-    publisher = await createModule({ enabled: true });
+    publisher = await createModule();
     await publisher.onModuleInit();
 
     await expect(
@@ -182,7 +185,7 @@ describe('VehicleEventsPublisher', () => {
       close: connectionClose,
     });
 
-    publisher = await createModule({ enabled: true });
+    publisher = await createModule();
     await publisher.onModuleInit();
     await publisher.onModuleDestroy();
 

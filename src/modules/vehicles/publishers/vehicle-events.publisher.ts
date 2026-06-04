@@ -7,11 +7,11 @@ import {
 import { ConfigService } from '@nestjs/config';
 import type { Channel, ChannelModel } from 'amqplib';
 import * as amqp from 'amqplib';
-import type { VehicleResponseDto } from '../../vehicles/dto/vehicle-response.dto';
 import {
   VEHICLE_EVENTS_EXCHANGE_DEFAULT,
   VehicleEventRoutingKey,
 } from '../constants/vehicle-events.constants';
+import type { VehicleResponseDto } from '../dto/vehicle-response.dto';
 import type { VehicleEventMessage } from '../interfaces/vehicle-event-message.interface';
 
 @Injectable()
@@ -21,11 +21,6 @@ export class VehicleEventsPublisher implements OnModuleInit, OnModuleDestroy {
   private channel: Channel | null = null;
 
   constructor(private readonly configService: ConfigService) {}
-
-  /** Indica se publicação RabbitMQ está habilitada via `RABBITMQ_ENABLED`. */
-  private get enabled(): boolean {
-    return this.configService.get<boolean>('rabbitmq.enabled') === true;
-  }
 
   /** Nome do exchange topic para eventos de veículos. */
   private get exchange(): string {
@@ -48,10 +43,6 @@ export class VehicleEventsPublisher implements OnModuleInit, OnModuleDestroy {
    * Falhas são logadas; CRUD de veículos continua sem publicação.
    */
   async onModuleInit(): Promise<void> {
-    if (!this.enabled) {
-      return;
-    }
-
     try {
       this.connection = await amqp.connect(this.url);
       this.channel = await this.connection.createChannel();
@@ -97,7 +88,7 @@ export class VehicleEventsPublisher implements OnModuleInit, OnModuleDestroy {
     eventType: VehicleEventRoutingKey,
     vehicle: VehicleResponseDto,
   ): Promise<void> {
-    if (!this.enabled || !this.channel) {
+    if (!this.channel) {
       return;
     }
 

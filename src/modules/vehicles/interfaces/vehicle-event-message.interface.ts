@@ -1,5 +1,5 @@
-import type { VehicleResponseDto } from '../../vehicles/dto/vehicle-response.dto';
 import type { VehicleEventRoutingKey } from '../constants/vehicle-events.constants';
+import type { VehicleResponseDto } from '../dto/vehicle-response.dto';
 
 export interface VehicleEventMessage {
   eventType: VehicleEventRoutingKey;

@@ -20,7 +20,7 @@ import { JwtStrategy } from '../../src/modules/auth/jwt.strategy';
 import { BrandsController } from '../../src/modules/brands/brands.controller';
 import { BrandsService } from '../../src/modules/brands/brands.service';
 import { Brand } from '../../src/modules/brands/entities/brand.entity';
-import { VehicleEventsPublisher } from '../../src/modules/messaging/publishers/vehicle-events.publisher';
+import { VehicleEventsPublisher } from '../../src/modules/vehicles/publishers/vehicle-events.publisher';
 import { Model } from '../../src/modules/models/entities/model.entity';
 import { ModelsController } from '../../src/modules/models/models.controller';
 import { ModelsService } from '../../src/modules/models/models.service';

@@ -24,7 +24,6 @@ import {
 } from '../../common/validators/vehicle-identifiers.validator';
 import { BrandResponseDto } from '../brands/dto/brand-response.dto';
 import { Brand } from '../brands/entities/brand.entity';
-import { VehicleEventsPublisher } from '../messaging/publishers/vehicle-events.publisher';
 import { ModelResponseDto } from '../models/dto/model-response.dto';
 import { Model } from '../models/entities/model.entity';
 import type { CreateVehicleInput } from './dto/create-vehicle.input';
@@ -37,6 +36,7 @@ import {
 } from './dto/vehicles-include-query.dto';
 import type { VehiclesListQueryDto } from './dto/vehicles-list-query.dto';
 import { Vehicle } from './entities/vehicle.entity';
+import { VehicleEventsPublisher } from './publishers/vehicle-events.publisher';
 import {
   VEHICLES_LIST_CACHE_KEY,
   vehicleByIdCacheKey,
