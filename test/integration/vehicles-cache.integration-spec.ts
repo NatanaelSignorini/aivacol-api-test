@@ -7,6 +7,7 @@ import {
   VEHICLES_LIST_CACHE_KEY,
   vehicleByIdCacheKey,
 } from '../../src/modules/vehicles/vehicles-cache.constants';
+import { itemFrom } from '../common/api-response.util';
 import { createIntegrationApp } from '../common/integration-app';
 import { describeIntegration } from '../common/integration-gate';
 import {
@@ -38,7 +39,7 @@ describeIntegration('Vehicles cache (docker integration)', () => {
       .send(AIVACOL_LOGIN)
       .expect(200);
 
-    adminToken = loginResponse.body.accessToken as string;
+    adminToken = itemFrom(loginResponse.body, 'login').accessToken;
 
     const modelResponse = await request(app.getHttpServer())
       .post('/api/v1/models')
@@ -46,7 +47,7 @@ describeIntegration('Vehicles cache (docker integration)', () => {
       .send({ name: uniqueModelName(runId) })
       .expect(201);
 
-    modelId = modelResponse.body.id as string;
+    modelId = itemFrom(modelResponse.body, 'model').id;
 
     const createResponse = await request(app.getHttpServer())
       .post('/api/v1/vehicles')
@@ -58,7 +59,7 @@ describeIntegration('Vehicles cache (docker integration)', () => {
       })
       .expect(201);
 
-    vehicleId = createResponse.body.id as string;
+    vehicleId = itemFrom(createResponse.body, 'vehicle').id;
 
     const cacheManager = app.get<Cache>(CACHE_MANAGER);
     await cacheManager.del(VEHICLES_LIST_CACHE_KEY);

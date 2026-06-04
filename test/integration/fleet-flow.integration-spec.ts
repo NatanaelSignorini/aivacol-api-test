@@ -1,6 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types';
+import { itemFrom, nodesFrom } from '../common/api-response.util';
 import { createIntegrationApp } from '../common/integration-app';
 import { describeIntegration } from '../common/integration-gate';
 import {
@@ -38,8 +39,10 @@ describeIntegration('Fleet flow (docker integration)', () => {
       .send(AIVACOL_LOGIN)
       .expect(200);
 
-    expect(response.body.accessToken).toEqual(expect.any(String));
-    adminToken = response.body.accessToken as string;
+    expect(itemFrom(response.body, 'login').accessToken).toEqual(
+      expect.any(String),
+    );
+    adminToken = itemFrom(response.body, 'login').accessToken;
   });
 
   it('creates brand, model, and vehicle', async () => {
@@ -49,8 +52,10 @@ describeIntegration('Fleet flow (docker integration)', () => {
       .send({ name: uniqueBrandName(runId) })
       .expect(201);
 
-    brandId = brandResponse.body.id as string;
-    expect(brandResponse.body.createdBy).toEqual(expect.any(String));
+    brandId = itemFrom(brandResponse.body, 'brand').id;
+    expect(itemFrom(brandResponse.body, 'brand').createdBy).toEqual(
+      expect.any(String),
+    );
 
     const modelResponse = await request(app.getHttpServer())
       .post('/api/v1/models')
@@ -58,7 +63,7 @@ describeIntegration('Fleet flow (docker integration)', () => {
       .send({ name: uniqueModelName(runId), brandId })
       .expect(201);
 
-    modelId = modelResponse.body.id as string;
+    modelId = itemFrom(modelResponse.body, 'model').id;
 
     const vehicleResponse = await request(app.getHttpServer())
       .post('/api/v1/vehicles')
@@ -70,11 +75,11 @@ describeIntegration('Fleet flow (docker integration)', () => {
       })
       .expect(201);
 
-    vehicleId = vehicleResponse.body.id as string;
-    expect(vehicleResponse.body.licensePlate).toBe(
-      vehicleIds.licensePlate.toUpperCase(),
-    );
-    expect(vehicleResponse.body.modelId).toBe(modelId);
+    const vehicle = itemFrom(vehicleResponse.body, 'vehicle');
+
+    vehicleId = vehicle.id;
+    expect(vehicle.licensePlate).toBe(vehicleIds.licensePlate.toUpperCase());
+    expect(vehicle.modelId).toBe(modelId);
   });
 
   it('lists and fetches the created vehicle', async () => {
@@ -84,8 +89,8 @@ describeIntegration('Fleet flow (docker integration)', () => {
       .expect(200);
 
     expect(
-      listResponse.body.some(
-        (vehicle: { id: string }) => vehicle.id === vehicleId,
+      nodesFrom(listResponse.body, 'vehicles').some(
+        (item) => item.id === vehicleId,
       ),
     ).toBe(true);
 
@@ -94,8 +99,10 @@ describeIntegration('Fleet flow (docker integration)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
 
-    expect(getResponse.body.id).toBe(vehicleId);
-    expect(getResponse.body.modelName).toBe(uniqueModelName(runId));
+    const fetchedVehicle = itemFrom(getResponse.body, 'vehicle');
+
+    expect(fetchedVehicle.id).toBe(vehicleId);
+    expect(fetchedVehicle.modelName).toBe(uniqueModelName(runId));
   });
 
   it('updates and removes the vehicle (admin)', async () => {
