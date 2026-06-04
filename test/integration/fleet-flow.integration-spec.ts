@@ -53,9 +53,6 @@ describeIntegration('Fleet flow (docker integration)', () => {
       .expect(201);
 
     brandId = itemFrom(brandResponse.body, 'brand').id;
-    expect(itemFrom(brandResponse.body, 'brand').createdBy).toEqual(
-      expect.any(String),
-    );
 
     const modelResponse = await request(app.getHttpServer())
       .post('/api/v1/models')
@@ -79,7 +76,16 @@ describeIntegration('Fleet flow (docker integration)', () => {
 
     vehicleId = vehicle.id;
     expect(vehicle.licensePlate).toBe(vehicleIds.licensePlate.toUpperCase());
-    expect(vehicle.modelId).toBe(modelId);
+    const vehicleWithRelations = await request(app.getHttpServer())
+      .get(`/api/v1/vehicles/${vehicleId}`)
+      .query({ includeBrand: true })
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+
+    const vehicleDetails = itemFrom(vehicleWithRelations.body, 'vehicle');
+
+    expect(vehicleDetails.model.id).toBe(modelId);
+    expect(vehicleDetails.model.brand.id).toBe(brandId);
   });
 
   it('lists and fetches the created vehicle', async () => {
@@ -96,13 +102,15 @@ describeIntegration('Fleet flow (docker integration)', () => {
 
     const getResponse = await request(app.getHttpServer())
       .get(`/api/v1/vehicles/${vehicleId}`)
+      .query({ includeBrand: true })
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
 
     const fetchedVehicle = itemFrom(getResponse.body, 'vehicle');
 
     expect(fetchedVehicle.id).toBe(vehicleId);
-    expect(fetchedVehicle.modelName).toBe(uniqueModelName(runId));
+    expect(fetchedVehicle.model.name).toBe(uniqueModelName(runId));
+    expect(fetchedVehicle.model.brand.name).toBe(uniqueBrandName(runId));
   });
 
   it('updates and removes the vehicle (admin)', async () => {

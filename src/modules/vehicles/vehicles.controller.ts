@@ -40,6 +40,7 @@ import { UserRole } from '../users/enums/user-role.enum';
 import { CreateVehicleInput } from './dto/create-vehicle.input';
 import { UpdateVehicleInput } from './dto/update-vehicle.input';
 import { VehicleResponseDto } from './dto/vehicle-response.dto';
+import { VehiclesIncludeQueryDto } from './dto/vehicles-include-query.dto';
 import { VehiclesListQueryDto } from './dto/vehicles-list-query.dto';
 import { VehiclesService } from './vehicles.service';
 
@@ -56,10 +57,11 @@ export class VehiclesController {
   @ApiCreateErrorResponses({ resource: 'vehicles' })
   create(
     @Body() input: CreateVehicleInput,
+    @Query() includeQuery: VehiclesIncludeQueryDto,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ApiDataResponse<'vehicle', VehicleResponseDto>> {
     return this.vehiclesService
-      .create(input, user.id)
+      .create(input, user.id, includeQuery)
       .then((vehicle) => buildItemDataResponse('vehicle', vehicle));
   }
 
@@ -80,9 +82,10 @@ export class VehiclesController {
   @ApiFindOneErrorResponses({ resource: 'vehicles' })
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
+    @Query() includeQuery: VehiclesIncludeQueryDto,
   ): Promise<ApiDataResponse<'vehicle', VehicleResponseDto>> {
     return this.vehiclesService
-      .findOne(id)
+      .findOne(id, includeQuery)
       .then((vehicle) => buildItemDataResponse('vehicle', vehicle));
   }
 
@@ -94,9 +97,10 @@ export class VehiclesController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() input: UpdateVehicleInput,
+    @Query() includeQuery: VehiclesIncludeQueryDto,
   ): Promise<ApiDataResponse<'vehicle', VehicleResponseDto>> {
     return this.vehiclesService
-      .update(id, input)
+      .update(id, input, includeQuery)
       .then((vehicle) => buildItemDataResponse('vehicle', vehicle));
   }
 

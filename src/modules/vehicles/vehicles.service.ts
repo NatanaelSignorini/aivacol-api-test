@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { Cache } from 'cache-manager';
-import { type FindOptionsWhere, Like, Repository } from 'typeorm';
+import { type FindOptionsRelations, type FindOptionsWhere, Like, Repository } from 'typeorm';
 import { DEFAULT_PAGE_SIZE } from '../../common/dto/pagination-query.dto';
 import type { Connection } from '../../common/interfaces/connection.interface';
 import type { EntityId } from '../../common/types/entity-id.type';
@@ -17,11 +17,19 @@ import {
   normalizeLicensePlate,
   normalizeRenavam,
 } from '../../common/validators/vehicle-identifiers.validator';
+import { Brand } from '../brands/entities/brand.entity';
 import { VehicleEventsPublisher } from '../messaging/publishers/vehicle-events.publisher';
 import { Model } from '../models/entities/model.entity';
 import type { CreateVehicleInput } from './dto/create-vehicle.input';
 import type { UpdateVehicleInput } from './dto/update-vehicle.input';
+import { BrandResponseDto } from '../brands/dto/brand-response.dto';
+import { ModelResponseDto } from '../models/dto/model-response.dto';
 import { VehicleResponseDto } from './dto/vehicle-response.dto';
+import {
+  resolveVehicleIncludeOptions,
+  type VehicleIncludeOptions,
+  type VehiclesIncludeQueryDto,
+} from './dto/vehicles-include-query.dto';
 import type { VehiclesListQueryDto } from './dto/vehicles-list-query.dto';
 import { Vehicle } from './entities/vehicle.entity';
 import {
@@ -45,6 +53,7 @@ export class VehiclesService {
   async create(
     input: CreateVehicleInput,
     createdBy: EntityId,
+    includeQuery: VehiclesIncludeQueryDto = {},
   ): Promise<VehicleResponseDto> {
     await this.assertModelExists(input.modelId);
 
@@ -69,8 +78,10 @@ export class VehiclesService {
     const saved = await this.vehiclesRepository.save(vehicle);
     await this.invalidateVehicleCache();
 
+    const includeOptions = resolveVehicleIncludeOptions(includeQuery);
     const response = this.toResponse(
-      await this.findEntityWithModelOrFail(saved.id),
+      await this.findEntityOrFail(saved.id, includeOptions),
+      includeOptions,
     );
     await this.vehicleEventsPublisher.publishCreated(response);
 
@@ -80,7 +91,9 @@ export class VehiclesService {
   async findAll(
     query: VehiclesListQueryDto,
   ): Promise<Connection<VehicleResponseDto>> {
-    if (this.canUseListCache(query)) {
+    const includeOptions = resolveVehicleIncludeOptions(query);
+
+    if (this.canUseListCache(query, includeOptions)) {
       const cached = await this.cacheManager.get<
         Connection<VehicleResponseDto>
       >(VEHICLES_LIST_CACHE_KEY);
@@ -93,27 +106,32 @@ export class VehiclesService {
     const where = this.buildListWhere(query);
     const [vehicles, totalCount] = await this.vehiclesRepository.findAndCount({
       where,
-      relations: { model: true },
+      relations: this.buildRelations(includeOptions),
       order: { licensePlate: 'ASC' },
       skip: query.skip,
       take: query.first,
     });
 
     const connection = toConnection(
-      vehicles.map((vehicle) => this.toResponse(vehicle)),
+      vehicles.map((vehicle) => this.toResponse(vehicle, includeOptions)),
       totalCount,
       query.skip,
     );
 
-    if (this.canUseListCache(query)) {
+    if (this.canUseListCache(query, includeOptions)) {
       await this.cacheManager.set(VEHICLES_LIST_CACHE_KEY, connection);
     }
 
     return connection;
   }
 
-  private canUseListCache(query: VehiclesListQueryDto): boolean {
+  private canUseListCache(
+    query: VehiclesListQueryDto,
+    includeOptions: VehicleIncludeOptions,
+  ): boolean {
     return (
+      !includeOptions.includeModel &&
+      !includeOptions.includeBrand &&
       query.skip === 0 &&
       query.first === DEFAULT_PAGE_SIZE &&
       !query.licensePlate &&
@@ -149,26 +167,46 @@ export class VehiclesService {
     return where;
   }
 
-  async findOne(id: EntityId): Promise<VehicleResponseDto> {
-    const cacheKey = vehicleByIdCacheKey(id);
-    const cached = await this.cacheManager.get<VehicleResponseDto>(cacheKey);
+  async findOne(
+    id: EntityId,
+    includeQuery: VehiclesIncludeQueryDto = {},
+  ): Promise<VehicleResponseDto> {
+    const includeOptions = resolveVehicleIncludeOptions(includeQuery);
 
-    if (cached) {
-      return cached;
+    if (this.canUseItemCache(includeOptions)) {
+      const cacheKey = vehicleByIdCacheKey(id);
+      const cached = await this.cacheManager.get<VehicleResponseDto>(cacheKey);
+
+      if (cached) {
+        return cached;
+      }
+
+      const vehicle = await this.findEntityOrFail(id, includeOptions);
+      const response = this.toResponse(vehicle, includeOptions);
+      await this.cacheManager.set(cacheKey, response);
+
+      return response;
     }
 
-    const vehicle = await this.findEntityWithModelOrFail(id);
-    const response = this.toResponse(vehicle);
-    await this.cacheManager.set(cacheKey, response);
+    const vehicle = await this.findEntityOrFail(id, includeOptions);
 
-    return response;
+    return this.toResponse(vehicle, includeOptions);
+  }
+
+  private canUseItemCache(includeOptions: VehicleIncludeOptions): boolean {
+    return (
+      !includeOptions.includeModel &&
+      !includeOptions.includeBrand
+    );
   }
 
   async update(
     id: EntityId,
     input: UpdateVehicleInput,
+    includeQuery: VehiclesIncludeQueryDto = {},
   ): Promise<VehicleResponseDto> {
-    const vehicle = await this.findEntityWithModelOrFail(id);
+    const includeOptions = resolveVehicleIncludeOptions(includeQuery);
+    const vehicle = await this.findEntityOrFail(id, includeOptions);
 
     if (input.modelId !== undefined) {
       await this.assertModelExists(input.modelId);
@@ -215,15 +253,22 @@ export class VehiclesService {
     await this.vehiclesRepository.save(vehicle);
     await this.invalidateVehicleCache(id);
 
-    const response = this.toResponse(await this.findEntityWithModelOrFail(id));
+    const response = this.toResponse(
+      await this.findEntityOrFail(id, includeOptions),
+      includeOptions,
+    );
     await this.vehicleEventsPublisher.publishUpdated(response);
 
     return response;
   }
 
-  async remove(id: EntityId): Promise<void> {
-    const vehicle = await this.findEntityWithModelOrFail(id);
-    const snapshot = this.toResponse(vehicle);
+  async remove(
+    id: EntityId,
+    includeQuery: VehiclesIncludeQueryDto = {},
+  ): Promise<void> {
+    const includeOptions = resolveVehicleIncludeOptions(includeQuery);
+    const vehicle = await this.findEntityOrFail(id, includeOptions);
+    const snapshot = this.toResponse(vehicle, includeOptions);
     await this.vehiclesRepository.remove(vehicle);
     await this.invalidateVehicleCache(id);
     await this.vehicleEventsPublisher.publishDeleted(snapshot);
@@ -233,10 +278,30 @@ export class VehiclesService {
     return this.vehiclesRepository.count({ where: { modelId } });
   }
 
-  private async findEntityWithModelOrFail(id: EntityId): Promise<Vehicle> {
+  private buildRelations(
+    includeOptions: VehicleIncludeOptions,
+  ): FindOptionsRelations<Vehicle> | undefined {
+    if (!includeOptions.includeModel) {
+      return undefined;
+    }
+
+    if (includeOptions.includeBrand) {
+      return { model: { brand: true } };
+    }
+
+    return { model: true };
+  }
+
+  private async findEntityOrFail(
+    id: EntityId,
+    includeOptions: VehicleIncludeOptions = {
+      includeModel: false,
+      includeBrand: false,
+    },
+  ): Promise<Vehicle> {
     const vehicle = await this.vehiclesRepository.findOne({
       where: { id },
-      relations: { model: true },
+      relations: this.buildRelations(includeOptions),
     });
 
     if (!vehicle) {
@@ -299,18 +364,56 @@ export class VehiclesService {
     }
   }
 
-  private toResponse(vehicle: Vehicle): VehicleResponseDto {
+  private toBrandResponse(brand: Brand): BrandResponseDto {
     return {
+      id: brand.id,
+      name: brand.name,
+      createdAt: brand.createdAt,
+      updatedAt: brand.updatedAt,
+      createdBy: brand.createdBy,
+    };
+  }
+
+  private toModelResponse(
+    model: Model,
+    includeOptions: VehicleIncludeOptions,
+  ): ModelResponseDto {
+    const response: ModelResponseDto = {
+      id: model.id,
+      name: model.name,
+      createdAt: model.createdAt,
+      updatedAt: model.updatedAt,
+      createdBy: model.createdBy,
+    };
+
+    if (includeOptions.includeBrand) {
+      response.brand = model.brand
+        ? this.toBrandResponse(model.brand)
+        : null;
+    }
+
+    return response;
+  }
+
+  private toResponse(
+    vehicle: Vehicle,
+    includeOptions: VehicleIncludeOptions,
+  ): VehicleResponseDto {
+    const response: VehicleResponseDto = {
       id: vehicle.id,
       licensePlate: vehicle.licensePlate,
       chassis: vehicle.chassis,
       renavam: vehicle.renavam,
       year: vehicle.year,
-      modelId: vehicle.modelId,
-      modelName: vehicle.model?.name ?? '',
       createdAt: vehicle.createdAt,
       updatedAt: vehicle.updatedAt,
       createdBy: vehicle.createdBy,
     };
+
+    if (includeOptions.includeModel && vehicle.model) {
+      response.model = this.toModelResponse(vehicle.model, includeOptions);
+    }
+
+    return response;
   }
 }

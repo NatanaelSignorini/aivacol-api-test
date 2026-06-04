@@ -404,10 +404,8 @@ describe('Vehicles (e2e)', () => {
       chassis: '9BWZZZ377VT004251',
       renavam: '12345678901',
       year: 2024,
-      modelId,
-      modelName: 'Corolla',
-      createdBy: mockOperatorUser.id,
     });
+    expect(vehicle.model).toBeUndefined();
     expect(vehicle.id).toEqual(expect.any(String));
   });
 

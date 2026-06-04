@@ -13,11 +13,11 @@ const vehicleSnapshot: VehicleResponseDto = {
   chassis: '9BWZZZ377VT004251',
   renavam: '12345678901',
   year: 2024,
-  modelId: '018f1234-5678-7890-abcd-ef1234567891',
-  modelName: 'Corolla',
-  createdAt: new Date('2026-01-01T00:00:00.000Z'),
-  updatedAt: new Date('2026-01-01T00:00:00.000Z'),
-  createdBy: '018f1234-5678-7890-abcd-ef1234567890',
+  model: {
+    id: '018f1234-5678-7890-abcd-ef1234567891',
+    name: 'Corolla',
+    brand: null,
+  },
 };
 
 describe('VehicleEventsPublisher', () => {

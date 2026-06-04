@@ -68,17 +68,38 @@ describe('VehiclesService', () => {
     assignId: jest.fn(),
   };
 
-  const vehicleResponse = {
+  const vehicleResponseBase = {
     id: vehicleId,
     licensePlate: 'ABC1D23',
     chassis: '9BWZZZ377VT004251',
     renavam: '12345678901',
     year: 2024,
-    modelId,
-    modelName: 'Corolla',
     createdAt: existingVehicle.createdAt,
     updatedAt: existingVehicle.updatedAt,
     createdBy: userId,
+  };
+
+  const vehicleResponseWithModel = {
+    ...vehicleResponseBase,
+    model: {
+      id: modelId,
+      name: 'Corolla',
+      createdAt: existingModel.createdAt,
+      updatedAt: existingModel.updatedAt,
+      createdBy: userId,
+    },
+  };
+
+  const vehicleResponseWithBrand = {
+    ...vehicleResponseBase,
+    model: {
+      id: modelId,
+      name: 'Corolla',
+      createdAt: existingModel.createdAt,
+      updatedAt: existingModel.updatedAt,
+      createdBy: userId,
+      brand: null,
+    },
   };
 
   beforeEach(async () => {
@@ -177,9 +198,40 @@ describe('VehiclesService', () => {
       expect(result).toMatchObject({
         id: vehicleId,
         licensePlate: 'ABC1D23',
-        modelName: 'Corolla',
-        createdBy: userId,
       });
+      expect(result.model).toBeUndefined();
+    });
+
+    it('includes model and brand when requested', async () => {
+      modelsRepository.findOne.mockResolvedValue(existingModel);
+      vehiclesRepository.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(existingVehicle);
+      vehiclesRepository.create.mockImplementation((data) =>
+        Object.assign(new Vehicle(), data),
+      );
+      vehiclesRepository.save.mockImplementation(async (vehicle) => ({
+        ...vehicle,
+        id: vehicleId,
+        createdAt: existingVehicle.createdAt,
+        updatedAt: existingVehicle.updatedAt,
+      }));
+
+      const result = await service.create(
+        {
+          licensePlate: 'ABC1D23',
+          chassis: '9BWZZZ377VT004251',
+          renavam: '12345678901',
+          year: 2024,
+          modelId,
+        },
+        userId,
+        { includeBrand: true },
+      );
+
+      expect(result).toMatchObject(vehicleResponseWithBrand);
       expect(cacheManager.del).toHaveBeenCalledWith(VEHICLES_LIST_CACHE_KEY);
       expect(vehicleEventsPublisher.publishCreated).toHaveBeenCalledWith(
         expect.objectContaining({ id: vehicleId }),
@@ -225,7 +277,7 @@ describe('VehiclesService', () => {
   describe('findAll', () => {
     const defaultQuery = { first: DEFAULT_PAGE_SIZE, skip: 0 };
     const cachedConnection = {
-      nodes: [vehicleResponse],
+      nodes: [vehicleResponseBase],
       pageInfo: { hasNextPage: false, hasPreviousPage: false },
       totalCount: 1,
     };
@@ -248,7 +300,7 @@ describe('VehiclesService', () => {
 
       expect(vehiclesRepository.findAndCount).toHaveBeenCalledWith({
         where: {},
-        relations: { model: true },
+        relations: undefined,
         order: { licensePlate: 'ASC' },
         skip: 0,
         take: DEFAULT_PAGE_SIZE,
@@ -256,18 +308,36 @@ describe('VehiclesService', () => {
       expect(cacheManager.set).toHaveBeenCalledWith(
         VEHICLES_LIST_CACHE_KEY,
         expect.objectContaining({
-          nodes: [vehicleResponse],
+          nodes: [vehicleResponseBase],
           totalCount: 1,
         }),
       );
       expect(result.nodes).toHaveLength(1);
       expect(result.nodes[0].licensePlate).toBe('ABC1D23');
+      expect(result.nodes[0].model).toBeUndefined();
+    });
+
+    it('loads model relation when includeModel is true', async () => {
+      cacheManager.get.mockResolvedValue(undefined);
+      vehiclesRepository.findAndCount.mockResolvedValue([[existingVehicle], 1]);
+
+      await service.findAll({
+        first: DEFAULT_PAGE_SIZE,
+        skip: 0,
+        includeModel: true,
+      });
+
+      expect(vehiclesRepository.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          relations: { model: true },
+        }),
+      );
     });
   });
 
   describe('findOne', () => {
     it('returns cached vehicle on cache hit', async () => {
-      cacheManager.get.mockResolvedValue(vehicleResponse);
+      cacheManager.get.mockResolvedValue(vehicleResponseBase);
 
       const result = await service.findOne(vehicleId);
 
@@ -275,7 +345,7 @@ describe('VehiclesService', () => {
         vehicleByIdCacheKey(vehicleId),
       );
       expect(vehiclesRepository.findOne).not.toHaveBeenCalled();
-      expect(result).toEqual(vehicleResponse);
+      expect(result).toEqual(vehicleResponseBase);
     });
 
     it('returns vehicle by id and caches on miss', async () => {
@@ -287,8 +357,35 @@ describe('VehiclesService', () => {
       expect(result.id).toBe(vehicleId);
       expect(cacheManager.set).toHaveBeenCalledWith(
         vehicleByIdCacheKey(vehicleId),
-        vehicleResponse,
+        vehicleResponseBase,
       );
+    });
+
+    it('returns vehicle with model when includeModel is true without caching', async () => {
+      cacheManager.get.mockResolvedValue(undefined);
+      vehiclesRepository.findOne.mockResolvedValue(existingVehicle);
+
+      const result = await service.findOne(vehicleId, {
+        includeModel: true,
+      });
+
+      expect(result).toMatchObject({
+        ...vehicleResponseWithModel,
+        createdAt: existingVehicle.createdAt,
+        updatedAt: existingVehicle.updatedAt,
+        createdBy: userId,
+      });
+      expect(cacheManager.set).not.toHaveBeenCalled();
+    });
+
+    it('returns full vehicle when includeBrand is true without caching', async () => {
+      cacheManager.get.mockResolvedValue(undefined);
+      vehiclesRepository.findOne.mockResolvedValue(existingVehicle);
+
+      const result = await service.findOne(vehicleId, { includeBrand: true });
+
+      expect(result).toMatchObject(vehicleResponseWithBrand);
+      expect(cacheManager.set).not.toHaveBeenCalled();
     });
 
     it('throws NotFoundException for missing id', async () => {
