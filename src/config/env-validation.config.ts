@@ -9,8 +9,8 @@ import {
   Max,
   Min,
   MinLength,
-  validateSync,
   ValidateIf,
+  validateSync,
 } from 'class-validator';
 
 /** Schema de validação das variáveis de ambiente (class-validator). */
@@ -116,19 +116,14 @@ export class EnvironmentVariables {
   @IsOptional()
   THROTTLE_LOGIN_LIMIT: number = 5;
 
-  @Transform(({ value }) => value === 'true')
-  @IsBoolean()
-  @IsOptional()
-  RABBITMQ_ENABLED: boolean = false;
-
-  @ValidateIf((o: EnvironmentVariables) => o.RABBITMQ_ENABLED === true)
+  @ValidateIf((o: EnvironmentVariables) => o.NODE_ENV !== 'test')
   @IsString()
   @Matches(/^amqps?:\/\/.+/, {
     message: 'RABBITMQ_URL must start with amqp:// or amqps://',
   })
   RABBITMQ_URL?: string;
 
-  @ValidateIf((o: EnvironmentVariables) => o.RABBITMQ_ENABLED === true)
+  @ValidateIf((o: EnvironmentVariables) => o.NODE_ENV !== 'test')
   @IsString()
   RABBITMQ_EXCHANGE?: string;
 
@@ -146,19 +141,14 @@ export class EnvironmentVariables {
   @IsOptional()
   RABBITMQ_MANAGEMENT_PORT: number = 15672;
 
-  @Transform(({ value }) => value === 'true')
-  @IsBoolean()
-  @IsOptional()
-  MONGODB_ENABLED: boolean = false;
-
-  @ValidateIf((o: EnvironmentVariables) => o.MONGODB_ENABLED === true)
+  @ValidateIf((o: EnvironmentVariables) => o.NODE_ENV !== 'test')
   @IsString()
   @Matches(/^mongodb(\+srv)?:\/\/.+/, {
     message: 'MONGODB_URI must start with mongodb:// or mongodb+srv://',
   })
   MONGODB_URI?: string;
 
-  @ValidateIf((o: EnvironmentVariables) => o.MONGODB_ENABLED === true)
+  @ValidateIf((o: EnvironmentVariables) => o.NODE_ENV !== 'test')
   @IsString()
   MONGODB_DATABASE?: string;
 
@@ -191,7 +181,9 @@ export function validateEnvironment(
       return `${error.property}: ${constraints.join(', ')}`;
     });
 
-    throw new Error(`Environment validation failed:\n${errorMessages.join('\n')}`);
+    throw new Error(
+      `Environment validation failed:\n${errorMessages.join('\n')}`,
+    );
   }
 
   return validatedConfig;

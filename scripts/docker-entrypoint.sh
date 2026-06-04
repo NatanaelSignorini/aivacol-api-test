@@ -20,17 +20,13 @@ wait_for_tcp() {
 wait_for_tcp "$DB_HOST" "$DB_PORT" "SQL Server"
 wait_for_tcp "$REDIS_HOST" "$REDIS_PORT" "Redis"
 
-if [ "${RABBITMQ_ENABLED}" = "true" ]; then
-  RABBITMQ_HOST="${RABBITMQ_HOST:-rabbitmq}"
-  RABBITMQ_PORT="${RABBITMQ_PORT:-5672}"
-  wait_for_tcp "$RABBITMQ_HOST" "$RABBITMQ_PORT" "RabbitMQ"
-fi
+RABBITMQ_HOST="${RABBITMQ_HOST:-rabbitmq}"
+RABBITMQ_PORT="${RABBITMQ_PORT:-5672}"
+wait_for_tcp "$RABBITMQ_HOST" "$RABBITMQ_PORT" "RabbitMQ"
 
-if [ "${MONGODB_ENABLED}" = "true" ]; then
-  MONGODB_HOST="${MONGODB_HOST:-mongodb}"
-  MONGODB_PORT="${MONGODB_PORT:-27017}"
-  wait_for_tcp "$MONGODB_HOST" "$MONGODB_PORT" "MongoDB"
-fi
+MONGODB_HOST="${MONGODB_HOST:-mongodb}"
+MONGODB_PORT="${MONGODB_PORT:-27017}"
+wait_for_tcp "$MONGODB_HOST" "$MONGODB_PORT" "MongoDB"
 
 echo "Installing dependencies..."
 yarn install --frozen-lockfile --non-interactive

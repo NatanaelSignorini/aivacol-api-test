@@ -27,12 +27,12 @@ export default () => ({
     loginLimit: ConfigEnvKeys.throttleLoginLimit(),
   },
   rabbitmq: {
-    enabled: ConfigEnvKeys.rabbitmqEnabled(),
     url: ConfigEnvKeys.rabbitmqUrl(),
     exchange: ConfigEnvKeys.rabbitmqExchange(),
+    auditExchange: ConfigEnvKeys.rabbitmqAuditExchange(),
+    auditQueue: ConfigEnvKeys.rabbitmqAuditQueue(),
   },
   mongodb: {
-    enabled: ConfigEnvKeys.mongodbEnabled(),
     uri: ConfigEnvKeys.mongodbUri(),
     database: ConfigEnvKeys.mongodbDatabase(),
   },

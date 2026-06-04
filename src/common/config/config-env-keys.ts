@@ -91,10 +91,6 @@ export class ConfigEnvKeys {
     return castNumber(process.env.THROTTLE_LOGIN_LIMIT) ?? 5;
   }
 
-  static rabbitmqEnabled(): boolean {
-    return process.env.RABBITMQ_ENABLED === 'true';
-  }
-
   static rabbitmqUrl(): string {
     return process.env.RABBITMQ_URL ?? 'amqp://guest:guest@localhost:5672';
   }
@@ -103,16 +99,20 @@ export class ConfigEnvKeys {
     return process.env.RABBITMQ_EXCHANGE ?? 'aivacol.vehicles';
   }
 
+  static rabbitmqAuditExchange(): string {
+    return process.env.RABBITMQ_AUDIT_EXCHANGE ?? 'aivacol.audit';
+  }
+
+  static rabbitmqAuditQueue(): string {
+    return process.env.RABBITMQ_AUDIT_QUEUE ?? 'aivacol.audit.interactions';
+  }
+
   static rabbitmqPort(): number {
     return castNumber(process.env.RABBITMQ_PORT) ?? 5672;
   }
 
   static rabbitmqManagementPort(): number {
     return castNumber(process.env.RABBITMQ_MANAGEMENT_PORT) ?? 15672;
-  }
-
-  static mongodbEnabled(): boolean {
-    return process.env.MONGODB_ENABLED === 'true';
   }
 
   static mongodbUri(): string {
