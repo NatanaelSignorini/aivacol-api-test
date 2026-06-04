@@ -269,15 +269,41 @@
             "name": "GET /models",
             "request": {
               "method": "GET",
-              "url": "{{baseUrl}}/models"
+              "url": {
+                "raw": "{{baseUrl}}/models?first=25&skip=0&includeBrand=true",
+                "host": ["{{baseUrl}}"],
+                "path": ["models"],
+                "query": [
+                  { "key": "first", "value": "25" },
+                  { "key": "skip", "value": "0" },
+                  {
+                    "key": "includeBrand",
+                    "value": "true",
+                    "description": "Inclui brand (id, name)"
+                  }
+                ]
+              },
+              "description": "Desmarque includeBrand na aba Params para resposta sem brand."
             }
           },
           {
             "name": "GET /models/:id",
             "request": {
               "method": "GET",
-              "url": "{{baseUrl}}/models/:id",
-              "description": "Substitua `:id` pelo UUID do modelo."
+              "url": {
+                "raw": "{{baseUrl}}/models/:id?includeBrand=true",
+                "host": ["{{baseUrl}}"],
+                "path": ["models", ":id"],
+                "query": [
+                  {
+                    "key": "includeBrand",
+                    "value": "true",
+                    "description": "Inclui brand (id, name)"
+                  }
+                ],
+                "variable": [{ "key": "id", "value": "" }]
+              },
+              "description": "Substitua `:id` pelo UUID do modelo. Params opcionais: includeBrand."
             }
           },
           {
@@ -351,16 +377,51 @@
             "name": "GET /vehicles",
             "request": {
               "method": "GET",
-              "url": "{{baseUrl}}/vehicles",
-              "description": "Primeira chamada popula Redis; repita para observar cache hit."
+              "url": {
+                "raw": "{{baseUrl}}/vehicles?first=25&skip=0&includeModel=true&includeBrand=true",
+                "host": ["{{baseUrl}}"],
+                "path": ["vehicles"],
+                "query": [
+                  { "key": "first", "value": "25" },
+                  { "key": "skip", "value": "0" },
+                  {
+                    "key": "includeModel",
+                    "value": "true",
+                    "description": "Inclui model (id, name)"
+                  },
+                  {
+                    "key": "includeBrand",
+                    "value": "true",
+                    "description": "Inclui brand dentro de model"
+                  }
+                ]
+              },
+              "description": "Primeira chamada popula Redis; repita para observar cache hit. Desmarque includeModel/includeBrand na aba Params para resposta sem relações."
             }
           },
           {
             "name": "GET /vehicles/:id",
             "request": {
               "method": "GET",
-              "url": "{{baseUrl}}/vehicles/:id",
-              "description": "Substitua `:id` pelo UUID do veículo."
+              "url": {
+                "raw": "{{baseUrl}}/vehicles/:id?includeModel=true&includeBrand=true",
+                "host": ["{{baseUrl}}"],
+                "path": ["vehicles", ":id"],
+                "query": [
+                  {
+                    "key": "includeModel",
+                    "value": "true",
+                    "description": "Inclui model (id, name)"
+                  },
+                  {
+                    "key": "includeBrand",
+                    "value": "true",
+                    "description": "Inclui brand dentro de model"
+                  }
+                ],
+                "variable": [{ "key": "id", "value": "" }]
+              },
+              "description": "Substitua `:id` pelo UUID do veículo. Params opcionais: includeModel, includeBrand."
             }
           },
           {

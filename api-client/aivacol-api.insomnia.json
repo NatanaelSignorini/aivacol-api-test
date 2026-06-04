@@ -469,7 +469,7 @@
       "parentId": "fld_models",
       "method": "GET",
       "url": "{{ baseUrl }}/models",
-      "description": "Lista paginada. Filtros: `name` (modelo), `brandId` (UUID da marca). Ative na aba **Query** ou use `filterModel*` no environment.",
+      "description": "Lista paginada. Filtros: `name`, `brandId`. Include opcional: `includeBrand` (true). Ative na aba **Query**.",
       "metaSortKey": 2,
       "parameters": [
         {
@@ -497,6 +497,12 @@
           "value": "{{ filterModelBrandId }}",
           "description": "UUID da marca (filtro exato)",
           "disabled": true
+        },
+        {
+          "id": "pair_req_fld_models_2_includeBrand",
+          "name": "includeBrand",
+          "value": "true",
+          "description": "Inclui brand aninhada completa (id, name, createdAt, updatedAt, createdBy)"
         }
       ]
     },
@@ -507,7 +513,7 @@
       "parentId": "fld_models",
       "method": "GET",
       "url": "{{ baseUrl }}/models/:id",
-      "description": "Substitua `:id` pelo UUID do modelo.",
+      "description": "Substitua `:id` pelo UUID do modelo. Query opcional: `includeBrand`.",
       "metaSortKey": 3,
       "parameters": [
         {
@@ -515,6 +521,12 @@
           "name": "id",
           "value": "018f1234-5678-7890-abcd-ef1234567890",
           "description": ""
+        },
+        {
+          "id": "pair_req_fld_models_3_includeBrand",
+          "name": "includeBrand",
+          "value": "true",
+          "description": "Inclui brand (id, name)"
         }
       ]
     },
@@ -631,7 +643,7 @@
       "parentId": "fld_vehicles",
       "method": "GET",
       "url": "{{ baseUrl }}/vehicles",
-      "description": "Lista paginada com cache Redis. Filtros: placa, ano, modelId, brandId. Ative na aba **Query** ou use `filterVehicle*` no environment.",
+      "description": "Lista paginada com cache Redis. Filtros: placa, ano, modelId, brandId. Includes opcionais: `includeModel`, `includeBrand` (true). Ative na aba **Query** ou use variáveis do environment.",
       "metaSortKey": 1,
       "parameters": [
         {
@@ -673,6 +685,18 @@
           "value": "{{ filterVehicleBrandId }}",
           "description": "UUID da marca",
           "disabled": true
+        },
+        {
+          "id": "pair_req_fld_vehicles_1_includeModel",
+          "name": "includeModel",
+          "value": "true",
+          "description": "Inclui model completo (id, name, createdAt, updatedAt, createdBy)"
+        },
+        {
+          "id": "pair_req_fld_vehicles_1_includeBrand",
+          "name": "includeBrand",
+          "value": "true",
+          "description": "Inclui model e brand completos (implica includeModel)"
         }
       ]
     },
@@ -683,7 +707,7 @@
       "parentId": "fld_vehicles",
       "method": "GET",
       "url": "{{ baseUrl }}/vehicles/:id",
-      "description": "Substitua `:id` pelo UUID do veículo.",
+      "description": "Substitua `:id` pelo UUID do veículo. Query opcional: `includeModel`, `includeBrand`.",
       "metaSortKey": 2,
       "parameters": [
         {
@@ -691,6 +715,18 @@
           "name": "id",
           "value": "018f1234-5678-7890-abcd-ef1234567890",
           "description": ""
+        },
+        {
+          "id": "pair_req_fld_vehicles_2_includeModel",
+          "name": "includeModel",
+          "value": "true",
+          "description": "Inclui model (id, name)"
+        },
+        {
+          "id": "pair_req_fld_vehicles_2_includeBrand",
+          "name": "includeBrand",
+          "value": "true",
+          "description": "Inclui brand dentro de model"
         }
       ]
     },
