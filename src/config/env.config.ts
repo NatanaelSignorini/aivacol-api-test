@@ -32,6 +32,7 @@ const MONGODB_REQUIRED_WHEN_ENABLED = [
 
 type EnvSource = Record<string, unknown>;
 
+/** Lê string não vazia de `source[key]`; retorna undefined se ausente ou em branco. */
 const readString = (source: EnvSource, key: string): string | undefined => {
   const value = source[key];
 
@@ -43,6 +44,7 @@ const readString = (source: EnvSource, key: string): string | undefined => {
   return trimmed.length > 0 ? trimmed : undefined;
 };
 
+/** Lê inteiro de variável de ambiente; retorna undefined se inválido. */
 const readNumber = (source: EnvSource, key: string): number | undefined => {
   const value = readString(source, key);
 
@@ -54,6 +56,7 @@ const readNumber = (source: EnvSource, key: string): number | undefined => {
   return Number.isNaN(parsed) ? undefined : parsed;
 };
 
+/** Interpreta booleano de string (`true`/`false`) ou valor nativo boolean. */
 const readBoolean = (source: EnvSource, key: string): boolean | undefined => {
   const value = source[key];
 
@@ -82,12 +85,15 @@ const readBoolean = (source: EnvSource, key: string): boolean | undefined => {
   return undefined;
 };
 
+/** Indica se flag de feature está explicitamente `true`. */
 const isFeatureEnabled = (source: EnvSource, flag: string): boolean =>
   readBoolean(source, flag) === true;
 
+/** Valida se porta está no intervalo 1–65535. */
 const isValidPort = (port: number | undefined): boolean =>
   port !== undefined && port >= 1 && port <= 65535;
 
+/** Extrai porta de URL HTTP; usa `defaultPort` quando ausente na URL. */
 const parsePortFromUrl = (
   url: string,
   defaultPort: number,
@@ -105,9 +111,11 @@ const parsePortFromUrl = (
   }
 };
 
+/** Extrai porta de URL AMQP (substitui esquema por http para parsing). */
 const parsePortFromAmqpUrl = (url: string): number | undefined =>
   parsePortFromUrl(url.replace(/^amqps?:/, 'http:'), 5672);
 
+/** Extrai porta de URI MongoDB; SRV usa 27017 por padrão. */
 const parsePortFromMongoUri = (uri: string): number | undefined => {
   if (uri.startsWith('mongodb+srv://')) {
     return 27017;
@@ -116,17 +124,21 @@ const parsePortFromMongoUri = (uri: string): number | undefined => {
   return parsePortFromUrl(uri.replace(/^mongodb:\/\//, 'http://'), 27017);
 };
 
+/** Lê string de `process.env` com fallback. */
 const envString = (key: string, fallback: string): string =>
   readString(process.env, key) ?? fallback;
 
+/** Lê número de `process.env` com fallback. */
 const envNumber = (key: string, fallback: number): number => {
   const parsed = readNumber(process.env, key);
   return parsed ?? fallback;
 };
 
+/** Lê booleano de `process.env` com fallback. */
 const envBoolean = (key: string, fallback: boolean): boolean =>
   readBoolean(process.env, key) ?? fallback;
 
+/** Objeto tipado com defaults de todas as variáveis de ambiente da aplicação. */
 export const env = {
   NODE_ENV: envString('NODE_ENV', 'development'),
   PORT: envNumber('PORT', 4000),
@@ -162,6 +174,7 @@ export const env = {
 
 export type Env = typeof env;
 
+/** Valida formato booleano (`true`/`false`) das flags listadas em BOOLEAN_ENV_KEYS. */
 const validateBooleanEnvVars = (source: EnvSource, errors: string[]): void => {
   for (const key of BOOLEAN_ENV_KEYS) {
     if (source[key] === undefined) {
@@ -174,6 +187,7 @@ const validateBooleanEnvVars = (source: EnvSource, errors: string[]): void => {
   }
 };
 
+/** Exige string não vazia quando feature flag está habilitada. */
 const requireStringWhenEnabled = (
   source: EnvSource,
   flag: string,
@@ -185,6 +199,7 @@ const requireStringWhenEnabled = (
   }
 };
 
+/** Exige porta válida (1–65535) quando feature flag está habilitada. */
 const requirePortWhenEnabled = (
   source: EnvSource,
   flag: string,
@@ -205,6 +220,7 @@ const requirePortWhenEnabled = (
   }
 };
 
+/** Valida porta opcional quando informada e feature flag está habilitada. */
 const validateOptionalPortWhenEnabled = (
   source: EnvSource,
   flag: string,
@@ -222,6 +238,7 @@ const validateOptionalPortWhenEnabled = (
   }
 };
 
+/** Valida variáveis obrigatórias de API, SQL Server e Redis. */
 const validateCoreInfrastructure = (
   source: EnvSource,
   nodeEnv: string,
@@ -258,6 +275,7 @@ const validateCoreInfrastructure = (
   }
 };
 
+/** Valida configuração RabbitMQ quando `RABBITMQ_ENABLED=true` (URL, portas, exchange). */
 const validateRabbitMq = (source: EnvSource, errors: string[]): void => {
   const flag = 'RABBITMQ_ENABLED';
 
@@ -299,6 +317,7 @@ const validateRabbitMq = (source: EnvSource, errors: string[]): void => {
   }
 };
 
+/** Valida configuração MongoDB quando `MONGODB_ENABLED=true` (URI, portas, database). */
 const validateMongoDb = (source: EnvSource, errors: string[]): void => {
   const flag = 'MONGODB_ENABLED';
 
@@ -336,7 +355,10 @@ const validateMongoDb = (source: EnvSource, errors: string[]): void => {
   }
 };
 
-/** Validates values loaded from `.env` into `process.env`. Does not run on import. */
+/**
+ * Valida variáveis carregadas do `.env` em `process.env`.
+ * Não é executada no import — chamada em `main.ts` e scripts de validação.
+ */
 export const validateEnvironment = (source: EnvSource = process.env): void => {
   const errors: string[] = [];
 

@@ -13,6 +13,7 @@ export const swaggerDocumentConfig = new DocumentBuilder()
   )
   .build();
 
+/** Monta documentação OpenAPI e expõe UI Swagger no path configurado. */
 export function setupSwagger(app: INestApplication, path: string): void {
   const document = SwaggerModule.createDocument(app, swaggerDocumentConfig);
   SwaggerModule.setup(path, app, document);

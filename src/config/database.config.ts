@@ -11,6 +11,7 @@ export interface DatabaseEnvConfig {
   trustServerCertificate: boolean;
 }
 
+/** Lê credenciais e opções TLS do SQL Server a partir de `env`. */
 export const buildDatabaseEnvConfig = (): DatabaseEnvConfig => ({
   host: env.DB_HOST,
   port: env.DB_PORT,
@@ -25,6 +26,7 @@ type MssqlDataSourceExtras = Partial<
   Pick<SqlServerDataSourceOptions, 'entities' | 'migrations'>
 >;
 
+/** Monta opções TypeORM para SQL Server (`synchronize: false` sempre). */
 export const buildDataSourceOptions = (
   db: DatabaseEnvConfig,
   extra?: MssqlDataSourceExtras,

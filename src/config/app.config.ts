@@ -1,5 +1,6 @@
 import { env } from './env.config';
 
+/** Mapeia variáveis de ambiente tipadas para o namespace do ConfigService NestJS. */
 export default () => ({
   nodeEnv: env.NODE_ENV,
   port: env.PORT,

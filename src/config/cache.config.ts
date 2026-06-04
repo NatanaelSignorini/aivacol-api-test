@@ -2,6 +2,7 @@ import type { CacheModuleOptions } from '@nestjs/cache-manager';
 import { ConfigService } from '@nestjs/config';
 import { redisStore } from 'cache-manager-redis-yet';
 
+/** Factory do CacheModule: conecta ao Redis e define TTL em milissegundos. */
 export const cacheConfigFactory = async (
   configService: ConfigService,
 ): Promise<CacheModuleOptions> => {

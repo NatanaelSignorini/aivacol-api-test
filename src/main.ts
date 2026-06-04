@@ -6,6 +6,7 @@ import { AppModule } from './app.module';
 import { validateEnvironment } from './config/env.config';
 import { setupSwagger } from './config/swagger.config';
 
+/** Inicializa a API: valida env, configura segurança HTTP, pipes, prefixo e Swagger. */
 async function bootstrap() {
   validateEnvironment(process.env as Record<string, unknown>);
 
