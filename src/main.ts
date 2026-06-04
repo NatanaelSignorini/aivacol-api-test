@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { validateEnvironment } from './config/env-validation.config';
+import { setupSwagger } from './config/swagger.config';
 
 async function bootstrap() {
   validateEnvironment(process.env as Record<string, unknown>);
@@ -23,6 +24,9 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  const swaggerPath = configService.get<string>('swagger.path') ?? 'api/docs';
+  setupSwagger(app, swaggerPath);
 
   await app.listen(port);
 }

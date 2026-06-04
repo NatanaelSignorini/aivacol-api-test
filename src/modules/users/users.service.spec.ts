@@ -1,31 +1,53 @@
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import type { Repository } from 'typeorm';
+import { passwordEncoder } from '../../common/decorators/password-encoder';
 import { User } from './entities/user.entity';
 import { UserRole } from './enums/user-role.enum';
 import { UsersService } from './users.service';
 
+jest.mock('../../common/decorators/password-encoder', () => ({
+  passwordEncoder: {
+    hash: jest.fn().mockResolvedValue('$2a$10$newhash'),
+    verify: jest.fn(),
+  },
+}));
+
 describe('UsersService', () => {
   let service: UsersService;
-  let repository: jest.Mocked<Pick<Repository<User>, 'findOne'>>;
+  let repository: jest.Mocked<
+    Pick<Repository<User>, 'create' | 'save' | 'find' | 'findOne' | 'remove'>
+  >;
 
-  const mockUser: User = {
-    id: '018f1234-5678-7890-abcd-ef1234567890',
-    nickname: 'aivacol',
-    name: 'Aivacol Admin',
-    email: 'admin@aivacol.com',
+  const adminId = '018f1234-5678-7890-abcd-ef1234567890';
+  const userId = '018f1234-5678-7890-abcd-ef1234567891';
+
+  const existingUser: User = {
+    id: userId,
+    nickname: 'operator1',
+    name: 'Fleet Operator',
+    email: 'operator1@aivacol.com',
     passwordHash: '$2a$10$hashedpassword',
-    role: UserRole.Admin,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    createdBy: '018f1234-5678-7890-abcd-ef1234567890',
+    role: UserRole.Operator,
+    createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    createdBy: adminId,
     creator: undefined,
     assignId: jest.fn(),
   };
 
   beforeEach(async () => {
     repository = {
+      create: jest.fn(),
+      save: jest.fn(),
+      find: jest.fn(),
       findOne: jest.fn(),
+      remove: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -39,50 +61,201 @@ describe('UsersService', () => {
     }).compile();
 
     service = module.get(UsersService);
+    jest.clearAllMocks();
   });
 
   describe('findById', () => {
     it('delegates to repository with id filter', async () => {
-      repository.findOne.mockResolvedValue(mockUser);
+      repository.findOne.mockResolvedValue(existingUser);
 
-      const result = await service.findById(mockUser.id);
+      const result = await service.findById(existingUser.id);
 
       expect(repository.findOne).toHaveBeenCalledWith({
-        where: { id: mockUser.id },
+        where: { id: existingUser.id },
       });
-      expect(result).toBe(mockUser);
+      expect(result).toBe(existingUser);
     });
   });
 
   describe('findByEmail', () => {
     it('includes password hash in select for auth lookup', async () => {
-      repository.findOne.mockResolvedValue(mockUser);
+      repository.findOne.mockResolvedValue(existingUser);
 
-      const result = await service.findByEmail(mockUser.email);
+      const result = await service.findByEmail(existingUser.email);
 
       expect(repository.findOne).toHaveBeenCalledWith({
-        where: { email: mockUser.email },
+        where: { email: existingUser.email },
         select: expect.objectContaining({
           passwordHash: true,
         }),
       });
-      expect(result).toBe(mockUser);
+      expect(result).toBe(existingUser);
     });
   });
 
-  describe('findByDocument', () => {
-    it('looks up user by nickname for document login', async () => {
-      repository.findOne.mockResolvedValue(mockUser);
+  describe('create', () => {
+    it('creates user with hashed password and createdBy', async () => {
+      repository.findOne.mockResolvedValue(null);
+      repository.create.mockImplementation((data) =>
+        Object.assign(new User(), data),
+      );
+      repository.save.mockImplementation(async (user) => ({
+        ...user,
+        id: userId,
+        createdAt: existingUser.createdAt,
+        updatedAt: existingUser.updatedAt,
+      }));
 
-      const result = await service.findByDocument('aivacol');
+      const result = await service.create(
+        {
+          nickname: 'operator1',
+          name: 'Fleet Operator',
+          email: 'operator1@aivacol.com',
+          password: 'Password1!',
+          role: UserRole.Operator,
+        },
+        adminId,
+      );
 
-      expect(repository.findOne).toHaveBeenCalledWith({
-        where: { nickname: 'aivacol' },
-        select: expect.objectContaining({
-          passwordHash: true,
+      expect(passwordEncoder.hash).toHaveBeenCalledWith('Password1!');
+      expect(repository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          nickname: 'operator1',
+          email: 'operator1@aivacol.com',
+          passwordHash: '$2a$10$newhash',
+          createdBy: adminId,
         }),
+      );
+      expect(result).toEqual({
+        id: userId,
+        nickname: 'operator1',
+        name: 'Fleet Operator',
+        email: 'operator1@aivacol.com',
+        role: UserRole.Operator,
+        createdAt: existingUser.createdAt,
+        updatedAt: existingUser.updatedAt,
+        createdBy: adminId,
       });
-      expect(result).toBe(mockUser);
+      expect(result).not.toHaveProperty('passwordHash');
+    });
+
+    it('rejects duplicate nickname on create', async () => {
+      repository.findOne.mockResolvedValueOnce(existingUser);
+
+      await expect(
+        service.create(
+          {
+            nickname: 'operator1',
+            name: 'Other',
+            email: 'other@aivacol.com',
+            password: 'Password1!',
+            role: UserRole.Operator,
+          },
+          adminId,
+        ),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('rejects duplicate email on create', async () => {
+      repository.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(existingUser);
+
+      await expect(
+        service.create(
+          {
+            nickname: 'other',
+            name: 'Other',
+            email: 'operator1@aivacol.com',
+            password: 'Password1!',
+            role: UserRole.Operator,
+          },
+          adminId,
+        ),
+      ).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('findAll', () => {
+    it('returns all users without password hash', async () => {
+      repository.find.mockResolvedValue([existingUser]);
+
+      const result = await service.findAll();
+
+      expect(repository.find).toHaveBeenCalledWith({
+        order: { nickname: 'ASC' },
+      });
+      expect(result[0]).not.toHaveProperty('passwordHash');
+      expect(result[0].nickname).toBe('operator1');
+    });
+  });
+
+  describe('findOne', () => {
+    it('returns user by id', async () => {
+      repository.findOne.mockResolvedValue(existingUser);
+
+      const result = await service.findOne(userId);
+
+      expect(result.id).toBe(userId);
+      expect(result).not.toHaveProperty('passwordHash');
+    });
+
+    it('throws NotFoundException for missing id', async () => {
+      repository.findOne.mockResolvedValue(null);
+
+      await expect(service.findOne(userId)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('update', () => {
+    it('updates user fields and password when provided', async () => {
+      repository.findOne
+        .mockResolvedValueOnce(existingUser)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null);
+      repository.save.mockImplementation(async (user) => user);
+
+      const result = await service.update(userId, {
+        name: 'Updated Name',
+        password: 'NewPass1!',
+      });
+
+      expect(passwordEncoder.hash).toHaveBeenCalledWith('NewPass1!');
+      expect(result.name).toBe('Updated Name');
+      expect(repository.save).toHaveBeenCalled();
+    });
+
+    it('rejects duplicate email on update', async () => {
+      const otherUser: User = {
+        ...existingUser,
+        id: '018f1234-5678-7890-abcd-ef1234567892',
+        email: 'taken@aivacol.com',
+      };
+
+      repository.findOne
+        .mockResolvedValueOnce(existingUser)
+        .mockResolvedValueOnce(otherUser);
+
+      await expect(
+        service.update(userId, { email: 'taken@aivacol.com' }),
+      ).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('remove', () => {
+    it('removes user by id', async () => {
+      repository.findOne.mockResolvedValue(existingUser);
+      repository.remove.mockResolvedValue(existingUser);
+
+      await service.remove(userId, adminId);
+
+      expect(repository.remove).toHaveBeenCalledWith(existingUser);
+    });
+
+    it('rejects self-delete with BadRequestException', async () => {
+      await expect(service.remove(adminId, adminId)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

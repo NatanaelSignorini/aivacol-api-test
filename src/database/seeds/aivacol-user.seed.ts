@@ -18,8 +18,14 @@ export interface SeedAivacolUserResult {
   user: User;
 }
 
+/** Mínimo do TypeORM usado pelo seed (facilita testes com mock). */
+export type SeedAivacolUserRepository = Pick<
+  Repository<User>,
+  'findOne' | 'create' | 'save'
+>;
+
 export async function seedAivacolUser(
-  repository: Repository<User>,
+  repository: SeedAivacolUserRepository,
   plainPassword: string,
 ): Promise<SeedAivacolUserResult> {
   const existing = await repository.findOne({
