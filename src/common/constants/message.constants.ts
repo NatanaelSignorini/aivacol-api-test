@@ -1,5 +1,5 @@
 /**
- * Authentication error messages.
+ * Mensagens de erro de autenticação.
  */
 export const AUTH_MESSAGE = {
   EMAIL_ALREADY_REGISTERED: 'Email already registered',

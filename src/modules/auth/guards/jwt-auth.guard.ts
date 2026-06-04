@@ -13,6 +13,10 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     super();
   }
 
+  /**
+   * Bypassa autenticação em rotas marcadas com `@Public()`.
+   * Demais rotas delegam validação JWT ao Passport.
+   */
   canActivate(context: ExecutionContext) {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
@@ -26,6 +30,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     return super.canActivate(context);
   }
 
+  /** Converte falha de autenticação em UnauthorizedException (401). */
   handleRequest<TUser>(err: Error | null, user: TUser): TUser {
     if (err || !user) {
       throw err ?? new UnauthorizedException();

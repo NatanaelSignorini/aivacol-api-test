@@ -32,6 +32,10 @@ export class StrongPasswordValidator implements ValidatorConstraintInterface {
       .spaces();
   }
 
+  /**
+   * Valida senha forte: 8–100 chars, maiúscula, minúscula, dígito e símbolo.
+   * Espaços não são permitidos.
+   */
   validate(password: string): boolean {
     const result = this.schema.validate(password, { details: true });
     return Array.isArray(result) ? result.length === 0 : Boolean(result);
@@ -42,6 +46,7 @@ export class StrongPasswordValidator implements ValidatorConstraintInterface {
   }
 }
 
+/** Decorator composto para campo de senha com regras de complexidade. */
 export function IsPasswordField() {
   return applyDecorators(
     IsString({ message: 'password must be a string' }),

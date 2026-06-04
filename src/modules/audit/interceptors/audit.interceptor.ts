@@ -20,6 +20,10 @@ export class AuditInterceptor implements NestInterceptor {
     private readonly configService: ConfigService,
   ) {}
 
+  /**
+   * Registra auditoria de cada requisição HTTP (sucesso ou erro) no MongoDB.
+   * Ignora rotas Swagger e favicon.
+   */
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     if (context.getType() !== 'http') {
       return next.handle();
@@ -46,6 +50,7 @@ export class AuditInterceptor implements NestInterceptor {
     );
   }
 
+  /** Exclui documentação Swagger e favicon da auditoria. */
   private shouldSkip(request: RequestWithUser): boolean {
     const path = request.path.toLowerCase();
     const swaggerPath =
@@ -57,6 +62,7 @@ export class AuditInterceptor implements NestInterceptor {
     );
   }
 
+  /** Monta registro de auditoria com duração, status e usuário autenticado. */
   private persistAudit(
     request: RequestWithUser,
     response: Response,

@@ -22,6 +22,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
+  /**
+   * Valida payload JWT e monta usuário autenticado anexado ao request.
+   * Exige `sub`, `email` e `role`; lança 401 se payload incompleto.
+   */
   validate(payload: JwtPayload): AuthenticatedUser {
     if (!payload.sub || !payload.email || !payload.role) {
       throw new UnauthorizedException('Invalid token payload');

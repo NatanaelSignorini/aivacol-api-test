@@ -38,6 +38,7 @@ function errorExample(
   };
 }
 
+/** Monta path de exemplo da API para documentação Swagger (`/api/v1/{resource}`). */
 function apiPath(resource: ApiResource, id?: string): string {
   const base = `/api/v1/${resource}`;
   return id ? `${base}/${id}` : base;
@@ -67,6 +68,7 @@ const BAD_REQUEST_MESSAGES: Record<ApiResource, string[]> = {
   ],
 };
 
+/** Gera exemplos de erro por recurso para decorators Swagger reutilizáveis. */
 export function buildResourceErrorExamples(
   resource: ApiResource,
 ): ResourceErrorExamples {
@@ -153,6 +155,7 @@ export const ERROR_RESPONSE_EXAMPLES = {
   ),
 } as const satisfies Record<string, ErrorResponseExample>;
 
+/** Envolve exemplo de erro no formato `{ example }` esperado pelo Swagger. */
 export function errorResponseSchema(example: ErrorResponseExample) {
   return { example };
 }

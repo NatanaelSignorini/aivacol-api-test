@@ -26,6 +26,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
   constructor(private readonly configService: ConfigService) {}
 
+  /**
+   * Normaliza qualquer exceção em envelope JSON padronizado (`ErrorResponse`).
+   * Inclui stack trace em ambientes não-produção para erros não-HTTP.
+   */
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -65,6 +69,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     response.status(status).json(body);
   }
 
+  /** Obtém status HTTP de HttpException ou retorna 500 para erros genéricos. */
   private resolveStatus(exception: unknown): number {
     if (exception instanceof HttpException) {
       return exception.getStatus();
@@ -73,6 +78,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     return HttpStatus.INTERNAL_SERVER_ERROR;
   }
 
+  /** Extrai corpo da exceção; oculta detalhes internos em produção. */
   private resolveExceptionBody(
     exception: unknown,
     isProduction: boolean,
@@ -92,6 +98,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     return 'Internal server error';
   }
 
+  /** Normaliza `message` do corpo da exceção para string ou array. */
   private extractMessage(body: HttpExceptionBody): string | string[] {
     if (typeof body === 'string') {
       return body;
@@ -108,6 +115,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     return 'Unexpected error';
   }
 
+  /** Obtém rótulo HTTP do erro (ex.: Bad Request) a partir do corpo ou status. */
   private extractError(body: HttpExceptionBody, status: number): string {
     if (typeof body !== 'string' && typeof body.error === 'string') {
       return body.error;

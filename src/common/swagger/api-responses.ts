@@ -17,6 +17,7 @@ export type ApiErrorOptions = {
   protected?: boolean;
 };
 
+/** Decorator Swagger para resposta 401 (JWT ausente ou inválido). */
 function unauthorizedResponse(resource: ApiResource) {
   const examples = buildResourceErrorExamples(resource);
 
@@ -26,6 +27,7 @@ function unauthorizedResponse(resource: ApiResource) {
   });
 }
 
+/** Decorator Swagger para resposta 403 (papel insuficiente). */
 function forbiddenResponse(resource: ApiResource) {
   const examples = buildResourceErrorExamples(resource);
 
@@ -35,6 +37,7 @@ function forbiddenResponse(resource: ApiResource) {
   });
 }
 
+/** Adiciona resposta 403 quando a rota exige papel protegido (`protected: true`). */
 function withProtected(
   options: ApiErrorOptions,
   decorators: MethodDecorator[],
@@ -44,14 +47,14 @@ function withProtected(
     : decorators;
 }
 
-/** GET collection — only auth errors apply. */
+/** GET coleção — apenas erros de autenticação (e 403 se protegido). */
 export function ApiListErrorResponses(options: ApiErrorOptions) {
   return applyDecorators(
     ...withProtected(options, [unauthorizedResponse(options.resource)]),
   );
 }
 
-/** GET by id — auth, invalid id, not found. */
+/** GET por id — auth, id inválido e not found. */
 export function ApiFindOneErrorResponses(options: ApiErrorOptions) {
   const examples = buildResourceErrorExamples(options.resource);
 
@@ -70,7 +73,7 @@ export function ApiFindOneErrorResponses(options: ApiErrorOptions) {
   );
 }
 
-/** POST — auth, validation, conflict; models may return 404 for invalid brandId. */
+/** POST — auth, validação, conflito; models pode retornar 404 para brandId inválido. */
 export function ApiCreateErrorResponses(options: ApiErrorOptions) {
   const examples = buildResourceErrorExamples(options.resource);
   const decorators: MethodDecorator[] = [
@@ -100,7 +103,7 @@ export function ApiCreateErrorResponses(options: ApiErrorOptions) {
   return applyDecorators(...withProtected(options, decorators));
 }
 
-/** PATCH — auth, validation, not found, conflict (except models). */
+/** PATCH — auth, validação, not found, conflito (exceto models). */
 export function ApiUpdateErrorResponses(options: ApiErrorOptions) {
   const examples = buildResourceErrorExamples(options.resource);
   const decorators: MethodDecorator[] = [
@@ -127,7 +130,7 @@ export function ApiUpdateErrorResponses(options: ApiErrorOptions) {
   return applyDecorators(...withProtected(options, decorators));
 }
 
-/** DELETE — auth, not found; optional conflict or self-delete rules. */
+/** DELETE — auth, not found; conflito ou auto-exclusão conforme recurso. */
 export function ApiDeleteErrorResponses(options: ApiErrorOptions) {
   const examples = buildResourceErrorExamples(options.resource);
   const decorators: MethodDecorator[] = [

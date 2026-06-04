@@ -1,3 +1,4 @@
+/** Converte duração JWT (`1h`, `30m`, `3600`) em segundos; fallback 3600 se inválido. */
 export function parseJwtDurationToSeconds(duration: string): number {
   const trimmed = duration.trim();
 

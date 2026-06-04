@@ -14,6 +14,10 @@ import type { AuthenticatedUser } from '../interfaces/jwt-payload.interface';
 export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
+  /**
+   * Verifica papéis exigidos via `@Roles()` após autenticação JWT.
+   * Rotas públicas ou sem `@Roles` passam; papéis insuficientes lançam 403.
+   */
   canActivate(context: ExecutionContext): boolean {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
