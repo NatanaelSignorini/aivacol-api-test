@@ -15,9 +15,7 @@ jest.mock('../../common/decorators/password-encoder', () => ({
 
 describe('AuthService', () => {
   let service: AuthService;
-  let usersService: jest.Mocked<
-    Pick<UsersService, 'findByEmail' | 'findByDocument'>
-  >;
+  let usersService: jest.Mocked<Pick<UsersService, 'findByEmail'>>;
   let jwtService: jest.Mocked<Pick<JwtService, 'signAsync'>>;
 
   const mockUser = {
@@ -35,7 +33,6 @@ describe('AuthService', () => {
   beforeEach(async () => {
     usersService = {
       findByEmail: jest.fn(),
-      findByDocument: jest.fn(),
     };
     jwtService = {
       signAsync: jest.fn(),
@@ -134,27 +131,11 @@ describe('AuthService', () => {
 
       expect(jwtService.signAsync).not.toHaveBeenCalled();
     });
+  });
 
-    it('returns access token when logging in with document', async () => {
-      usersService.findByDocument.mockResolvedValue(mockUser);
-      jest.mocked(passwordEncoder.verify).mockResolvedValue(true);
-      jwtService.signAsync
-        .mockResolvedValueOnce('signed-access-token')
-        .mockResolvedValueOnce('signed-refresh-token');
-
-      const result = await service.login({
-        document: 'aivacol',
-        password: 'Password1!',
-      });
-
-      expect(usersService.findByDocument).toHaveBeenCalledWith('aivacol');
-      expect(usersService.findByEmail).not.toHaveBeenCalled();
-      expect(result).toEqual({
-        accessToken: 'signed-access-token',
-        refreshToken: 'signed-refresh-token',
-        tokenType: 'Bearer',
-        expiresIn: 3600,
-      });
+  describe('logout', () => {
+    it('returns success message', () => {
+      expect(service.logout()).toEqual({ message: 'Logout successful' });
     });
   });
 });

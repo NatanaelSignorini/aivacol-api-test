@@ -6,6 +6,7 @@ import { passwordEncoder } from '../../common/decorators/password-encoder';
 import { UsersService } from '../users/users.service';
 import type { LoginInput } from './dto/login.input';
 import type { LoginResponseDto } from './dto/login-response.dto';
+import type { LogoutResponseDto } from './dto/logout-response.dto';
 import type { JwtPayload } from './interfaces/jwt-payload.interface';
 import { parseJwtDurationToSeconds } from './utils/parse-jwt-duration.util';
 
@@ -21,9 +22,7 @@ export class AuthService {
   ) {}
 
   async login(input: LoginInput): Promise<LoginResponseDto> {
-    const user = input.email
-      ? await this.usersService.findByEmail(input.email)
-      : await this.usersService.findByDocument(input.document!);
+    const user = await this.usersService.findByEmail(input.email);
 
     if (!user) {
       throw new UnauthorizedException(AUTH_MESSAGE.INVALID_CREDENTIALS);
@@ -64,5 +63,9 @@ export class AuthService {
       tokenType: TOKEN_TYPE,
       expiresIn,
     };
+  }
+
+  logout(): LogoutResponseDto {
+    return { message: AUTH_MESSAGE.LOGOUT_SUCCESSFUL };
   }
 }

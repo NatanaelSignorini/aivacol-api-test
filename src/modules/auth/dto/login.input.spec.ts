@@ -6,7 +6,10 @@ const validPassword = 'Password1!';
 
 async function validateLoginInput(payload: object) {
   const input = plainToInstance(LoginInput, payload);
-  return validate(input);
+  return validate(input, {
+    whitelist: true,
+    forbidNonWhitelisted: true,
+  });
 }
 
 describe('LoginInput', () => {
@@ -19,28 +22,22 @@ describe('LoginInput', () => {
     expect(errors).toHaveLength(0);
   });
 
-  it('accepts login with document and password', async () => {
+  it('rejects when email is missing', async () => {
     const errors = await validateLoginInput({
-      document: 'aivacol',
       password: validPassword,
     });
 
-    expect(errors).toHaveLength(0);
+    expect(errors.some((e) => e.property === 'email')).toBe(true);
   });
 
-  it('rejects when email and document are missing', async () => {
+  it('rejects unknown fields such as document', async () => {
     const errors = await validateLoginInput({
+      email: 'admin@aivacol.com',
+      document: '12345678901',
       password: validPassword,
     });
 
     expect(errors.length).toBeGreaterThan(0);
-    expect(
-      errors.some((e) =>
-        Object.values(e.constraints ?? {}).some((msg) =>
-          msg.includes('email or document is required'),
-        ),
-      ),
-    ).toBe(true);
   });
 
   it('rejects invalid email', async () => {

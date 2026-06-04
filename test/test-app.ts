@@ -81,7 +81,6 @@ function createE2eAppModule(usersService: Partial<UsersService>) {
         provide: UsersService,
         useValue: {
           findByEmail: jest.fn(),
-          findByDocument: jest.fn(),
           findById: jest.fn(),
           ...usersService,
         },

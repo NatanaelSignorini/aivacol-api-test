@@ -1,17 +1,13 @@
-import { IsNotEmpty, IsString, ValidateIf } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 import { IsEmailField } from '../../../common/validators/email.validator';
 import { IsPasswordField } from '../../../common/validators/password.validator';
 
 export class LoginInput {
-  @ValidateIf((o: LoginInput) => !o.document)
+  @ApiProperty({ example: 'admin@aivacol.com' })
   @IsEmailField()
-  email?: string;
+  email!: string;
 
-  @ValidateIf((o: LoginInput) => !o.email)
-  @IsString()
-  @IsNotEmpty({ message: 'email or document is required' })
-  document?: string;
-
+  @ApiProperty({ example: 'Aivacol@2026' })
   @IsPasswordField()
   password!: string;
 }
