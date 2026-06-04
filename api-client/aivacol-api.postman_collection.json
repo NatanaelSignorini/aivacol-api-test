@@ -3,7 +3,7 @@
     "info": {
       "_postman_id": "aivacol-fleet-api",
       "name": "Aivacol API — Gestão de Frota",
-      "description": "Coleção + environment **Local** embutidos neste arquivo.\n\nPastas: Auth, Users, Brands, Models, Vehicles.\n\n1. Importe só este JSON (cria coleção e environment)\n2. Selecione environment **Aivacol API — Local**\n3. **Auth → POST /auth/login** (salva o token)\n4. Brands → Models → Vehicles para popular IDs",
+      "description": "Coleção + environment **Local** embutidos neste arquivo.\n\nPastas: Auth, Users, Brands, Models, Vehicles.\n\n1. Importe só este JSON (cria coleção e environment)\n2. Selecione environment **Aivacol API — Local**\n3. **Auth → POST /auth/login** (salva o token)\n4. Rotas com `:id` — informe o UUID diretamente em cada request",
       "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "auth": {
@@ -35,22 +35,6 @@
       },
       {
         "key": "accessToken",
-        "value": ""
-      },
-      {
-        "key": "brandId",
-        "value": ""
-      },
-      {
-        "key": "modelId",
-        "value": ""
-      },
-      {
-        "key": "vehicleId",
-        "value": ""
-      },
-      {
-        "key": "userId",
         "value": ""
       }
     ],
@@ -113,21 +97,6 @@
         "item": [
           {
             "name": "POST /users",
-            "event": [
-              {
-                "listen": "test",
-                "script": {
-                  "type": "text/javascript",
-                  "exec": [
-                    "if (pm.response.code === 201) {",
-                    "  const { id } = pm.response.json();",
-                    "  pm.environment.set('userId', id);",
-                    "  pm.collectionVariables.set('userId', id);",
-                    "}"
-                  ]
-                }
-              }
-            ],
             "request": {
               "method": "POST",
               "header": [
@@ -151,10 +120,19 @@
             }
           },
           {
+            "name": "GET /users/me",
+            "request": {
+              "method": "GET",
+              "url": "{{baseUrl}}/users/me",
+              "description": "Perfil do usuário autenticado (admin ou operator)."
+            }
+          },
+          {
             "name": "GET /users/:id",
             "request": {
               "method": "GET",
-              "url": "{{baseUrl}}/users/{{userId}}"
+              "url": "{{baseUrl}}/users/:id",
+              "description": "Substitua `:id` pelo UUID do usuário."
             }
           },
           {
@@ -171,40 +149,26 @@
                 "mode": "raw",
                 "raw": "{\n  \"name\": \"John Doe Updated\"\n}"
               },
-              "url": "{{baseUrl}}/users/{{userId}}"
+              "url": "{{baseUrl}}/users/:id",
+              "description": "Substitua `:id` pelo UUID do usuário."
             }
           },
           {
             "name": "DELETE /users/:id",
             "request": {
               "method": "DELETE",
-              "url": "{{baseUrl}}/users/{{userId}}",
-              "description": "Não é possível remover o próprio usuário autenticado."
+              "url": "{{baseUrl}}/users/:id",
+              "description": "Substitua `:id` pelo UUID do usuário. Não é possível remover o próprio usuário autenticado."
             }
           }
         ],
-        "description": "Todas as rotas exigem role **admin** no JWT."
+        "description": "Rotas de gestão exigem role **admin** no JWT. `GET /users/me` está disponível para qualquer usuário autenticado."
       },
       {
         "name": "Brands",
         "item": [
           {
             "name": "POST /brands",
-            "event": [
-              {
-                "listen": "test",
-                "script": {
-                  "type": "text/javascript",
-                  "exec": [
-                    "if (pm.response.code === 201) {",
-                    "  const { id } = pm.response.json();",
-                    "  pm.environment.set('brandId', id);",
-                    "  pm.collectionVariables.set('brandId', id);",
-                    "}"
-                  ]
-                }
-              }
-            ],
             "request": {
               "method": "POST",
               "header": [
@@ -231,7 +195,8 @@
             "name": "GET /brands/:id",
             "request": {
               "method": "GET",
-              "url": "{{baseUrl}}/brands/{{brandId}}"
+              "url": "{{baseUrl}}/brands/:id",
+              "description": "Substitua `:id` pelo UUID da marca."
             }
           },
           {
@@ -248,14 +213,16 @@
                 "mode": "raw",
                 "raw": "{\n  \"name\": \"Toyota Motor\"\n}"
               },
-              "url": "{{baseUrl}}/brands/{{brandId}}"
+              "url": "{{baseUrl}}/brands/:id",
+              "description": "Substitua `:id` pelo UUID da marca."
             }
           },
           {
             "name": "DELETE /brands/:id",
             "request": {
               "method": "DELETE",
-              "url": "{{baseUrl}}/brands/{{brandId}}"
+              "url": "{{baseUrl}}/brands/:id",
+              "description": "Substitua `:id` pelo UUID da marca."
             }
           }
         ]
@@ -265,21 +232,6 @@
         "item": [
           {
             "name": "POST /models",
-            "event": [
-              {
-                "listen": "test",
-                "script": {
-                  "type": "text/javascript",
-                  "exec": [
-                    "if (pm.response.code === 201) {",
-                    "  const { id } = pm.response.json();",
-                    "  pm.environment.set('modelId', id);",
-                    "  pm.collectionVariables.set('modelId', id);",
-                    "}"
-                  ]
-                }
-              }
-            ],
             "request": {
               "method": "POST",
               "header": [
@@ -290,10 +242,10 @@
               ],
               "body": {
                 "mode": "raw",
-                "raw": "{\n  \"name\": \"Corolla\",\n  \"brandId\": \"{{brandId}}\"\n}"
+                "raw": "{\n  \"name\": \"Corolla\",\n  \"brandId\": \"018f1234-5678-7890-abcd-ef1234567890\"\n}"
               },
               "url": "{{baseUrl}}/models",
-              "description": "Execute POST /brands antes ou informe `brandId` manualmente."
+              "description": "Substitua `brandId` pelo UUID retornado em POST /brands, ou use POST /models (sem marca)."
             }
           },
           {
@@ -324,7 +276,8 @@
             "name": "GET /models/:id",
             "request": {
               "method": "GET",
-              "url": "{{baseUrl}}/models/{{modelId}}"
+              "url": "{{baseUrl}}/models/:id",
+              "description": "Substitua `:id` pelo UUID do modelo."
             }
           },
           {
@@ -341,7 +294,8 @@
                 "mode": "raw",
                 "raw": "{\n  \"name\": \"Corolla XEi\"\n}"
               },
-              "url": "{{baseUrl}}/models/{{modelId}}"
+              "url": "{{baseUrl}}/models/:id",
+              "description": "Substitua `:id` pelo UUID do modelo."
             }
           },
           {
@@ -358,14 +312,16 @@
                 "mode": "raw",
                 "raw": "{\n  \"brandId\": null\n}"
               },
-              "url": "{{baseUrl}}/models/{{modelId}}"
+              "url": "{{baseUrl}}/models/:id",
+              "description": "Substitua `:id` pelo UUID do modelo."
             }
           },
           {
             "name": "DELETE /models/:id",
             "request": {
               "method": "DELETE",
-              "url": "{{baseUrl}}/models/{{modelId}}"
+              "url": "{{baseUrl}}/models/:id",
+              "description": "Substitua `:id` pelo UUID do modelo."
             }
           }
         ]
@@ -375,21 +331,6 @@
         "item": [
           {
             "name": "POST /vehicles",
-            "event": [
-              {
-                "listen": "test",
-                "script": {
-                  "type": "text/javascript",
-                  "exec": [
-                    "if (pm.response.code === 201) {",
-                    "  const { id } = pm.response.json();",
-                    "  pm.environment.set('vehicleId', id);",
-                    "  pm.collectionVariables.set('vehicleId', id);",
-                    "}"
-                  ]
-                }
-              }
-            ],
             "request": {
               "method": "POST",
               "header": [
@@ -400,10 +341,10 @@
               ],
               "body": {
                 "mode": "raw",
-                "raw": "{\n  \"licensePlate\": \"ABC1D23\",\n  \"chassis\": \"9BWZZZ377VT004251\",\n  \"renavam\": \"12345678901\",\n  \"year\": 2024,\n  \"modelId\": \"{{modelId}}\"\n}"
+                "raw": "{\n  \"licensePlate\": \"ABC1D23\",\n  \"chassis\": \"9BWZZZ377VT004251\",\n  \"renavam\": \"12345678901\",\n  \"year\": 2024,\n  \"modelId\": \"018f1234-5678-7890-abcd-ef1234567890\"\n}"
               },
               "url": "{{baseUrl}}/vehicles",
-              "description": "Requer `modelId` válido (crie um Model antes)."
+              "description": "Substitua `modelId` pelo UUID retornado em POST /models."
             }
           },
           {
@@ -418,7 +359,8 @@
             "name": "GET /vehicles/:id",
             "request": {
               "method": "GET",
-              "url": "{{baseUrl}}/vehicles/{{vehicleId}}"
+              "url": "{{baseUrl}}/vehicles/:id",
+              "description": "Substitua `:id` pelo UUID do veículo."
             }
           },
           {
@@ -435,15 +377,16 @@
                 "mode": "raw",
                 "raw": "{\n  \"year\": 2025\n}"
               },
-              "url": "{{baseUrl}}/vehicles/{{vehicleId}}",
-              "description": "Invalida entradas de cache de veículos."
+              "url": "{{baseUrl}}/vehicles/:id",
+              "description": "Substitua `:id` pelo UUID do veículo. Invalida entradas de cache de veículos."
             }
           },
           {
             "name": "DELETE /vehicles/:id",
             "request": {
               "method": "DELETE",
-              "url": "{{baseUrl}}/vehicles/{{vehicleId}}"
+              "url": "{{baseUrl}}/vehicles/:id",
+              "description": "Substitua `:id` pelo UUID do veículo."
             }
           }
         ],
@@ -483,30 +426,6 @@
         "key": "accessToken",
         "value": "",
         "type": "secret",
-        "enabled": true
-      },
-      {
-        "key": "brandId",
-        "value": "",
-        "type": "default",
-        "enabled": true
-      },
-      {
-        "key": "modelId",
-        "value": "",
-        "type": "default",
-        "enabled": true
-      },
-      {
-        "key": "vehicleId",
-        "value": "",
-        "type": "default",
-        "enabled": true
-      },
-      {
-        "key": "userId",
-        "value": "",
-        "type": "default",
         "enabled": true
       }
     ],

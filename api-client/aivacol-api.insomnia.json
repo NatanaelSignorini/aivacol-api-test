@@ -8,7 +8,8 @@
       "_id": "wrk_aivacol_fleet",
       "_type": "workspace",
       "name": "Aivacol API — Gestão de Frota",
-      "description": "Coleção + environment **Local** embutidos. Pastas: Auth, Users, Brands, Models, Vehicles. Rode POST /auth/login.",
+      "description": "Coleção + environments embutidos. Pastas: Auth, Users, Brands, Models, Vehicles. Selecione **Aivacol API — Local**, rode POST /auth/login. Nos `GET` de listagem, use a aba **Query** (ative os filtros desejados ou preencha as variáveis `filter*` no environment).",
+      "scope": "collection",
       "metaSortKey": -1
     },
     {
@@ -20,10 +21,21 @@
       "metaSortKey": -1
     },
     {
+      "_id": "env_aivacol_base",
+      "_type": "environment",
+      "name": "Base Environment",
+      "parentId": "wrk_aivacol_fleet",
+      "color": null,
+      "isPrivate": false,
+      "data": {},
+      "dataPropertyOrder": null,
+      "metaSortKey": 0
+    },
+    {
       "_id": "env_aivacol_local",
       "_type": "environment",
       "name": "Aivacol API — Local",
-      "parentId": "wrk_aivacol_fleet",
+      "parentId": "env_aivacol_base",
       "color": "#0f766e",
       "isPrivate": false,
       "data": {
@@ -32,12 +44,43 @@
         "adminEmail": "admin@aivacol.com",
         "adminPassword": "Aivacol123!",
         "accessToken": "",
-        "brandId": "",
-        "modelId": "",
-        "vehicleId": "",
-        "userId": ""
+        "listFirst": "25",
+        "listSkip": "0",
+        "filterBrandName": "Toyota",
+        "filterUserEmail": "aivacol.com",
+        "filterUserNickname": "jdoe",
+        "filterUserName": "",
+        "filterUserRole": "",
+        "filterModelName": "Corolla",
+        "filterModelBrandId": "",
+        "filterVehiclePlate": "ABC",
+        "filterVehicleYear": "",
+        "filterVehicleModelId": "",
+        "filterVehicleBrandId": ""
       },
-      "metaSortKey": -1
+      "dataPropertyOrder": {
+        "&": [
+          "baseUrl",
+          "swaggerUrl",
+          "adminEmail",
+          "adminPassword",
+          "accessToken",
+          "listFirst",
+          "listSkip",
+          "filterBrandName",
+          "filterUserEmail",
+          "filterUserNickname",
+          "filterUserName",
+          "filterUserRole",
+          "filterModelName",
+          "filterModelBrandId",
+          "filterVehiclePlate",
+          "filterVehicleYear",
+          "filterVehicleModelId",
+          "filterVehicleBrandId"
+        ]
+      },
+      "metaSortKey": 1
     },
     {
       "_id": "fld_auth",
@@ -90,7 +133,7 @@
       "name": "Users",
       "parentId": "wrk_aivacol_fleet",
       "metaSortKey": 1,
-      "description": "Todas as rotas exigem role **admin** no JWT.",
+      "description": "Rotas de gestão exigem role **admin** no JWT. `GET /users/me` está disponível para qualquer usuário autenticado.",
       "authentication": {
         "type": "bearer",
         "token": "{{ accessToken }}"
@@ -123,8 +166,60 @@
       "parentId": "fld_users",
       "method": "GET",
       "url": "{{ baseUrl }}/users",
-      "description": "",
-      "metaSortKey": 1
+      "description": "Lista paginada com filtros opcionais. Ative os query params na aba **Query** ou ajuste `filterUser*` no environment.",
+      "metaSortKey": 1,
+      "parameters": [
+        {
+          "id": "pair_req_fld_users_1_first",
+          "name": "first",
+          "value": "{{ listFirst }}",
+          "description": "Máximo de itens (1–100, padrão 25)"
+        },
+        {
+          "id": "pair_req_fld_users_1_skip",
+          "name": "skip",
+          "value": "{{ listSkip }}",
+          "description": "Offset da paginação"
+        },
+        {
+          "id": "pair_req_fld_users_1_email",
+          "name": "email",
+          "value": "{{ filterUserEmail }}",
+          "description": "Busca parcial por e-mail",
+          "disabled": true
+        },
+        {
+          "id": "pair_req_fld_users_1_nickname",
+          "name": "nickname",
+          "value": "{{ filterUserNickname }}",
+          "description": "Busca parcial por nickname",
+          "disabled": true
+        },
+        {
+          "id": "pair_req_fld_users_1_name",
+          "name": "name",
+          "value": "{{ filterUserName }}",
+          "description": "Busca parcial por nome",
+          "disabled": true
+        },
+        {
+          "id": "pair_req_fld_users_1_role",
+          "name": "role",
+          "value": "{{ filterUserRole }}",
+          "description": "Filtro exato: admin ou operator",
+          "disabled": true
+        }
+      ]
+    },
+    {
+      "_id": "req_fld_users_me",
+      "_type": "request",
+      "name": "GET /users/me",
+      "parentId": "fld_users",
+      "method": "GET",
+      "url": "{{ baseUrl }}/users/me",
+      "description": "Perfil do usuário autenticado (admin ou operator).",
+      "metaSortKey": 2
     },
     {
       "_id": "req_fld_users_2",
@@ -132,9 +227,17 @@
       "name": "GET /users/:id",
       "parentId": "fld_users",
       "method": "GET",
-      "url": "{{ baseUrl }}/users/{{ userId }}",
-      "description": "",
-      "metaSortKey": 2
+      "url": "{{ baseUrl }}/users/:id",
+      "description": "Substitua `:id` pelo UUID do usuário.",
+      "metaSortKey": 3,
+      "parameters": [
+        {
+          "id": "pair_req_fld_users_2_id",
+          "name": "id",
+          "value": "018f1234-5678-7890-abcd-ef1234567890",
+          "description": ""
+        }
+      ]
     },
     {
       "_id": "req_fld_users_3",
@@ -142,9 +245,17 @@
       "name": "PATCH /users/:id",
       "parentId": "fld_users",
       "method": "PATCH",
-      "url": "{{ baseUrl }}/users/{{ userId }}",
-      "description": "",
-      "metaSortKey": 3,
+      "url": "{{ baseUrl }}/users/:id",
+      "description": "Substitua `:id` pelo UUID do usuário.",
+      "metaSortKey": 4,
+      "parameters": [
+        {
+          "id": "pair_req_fld_users_3_id",
+          "name": "id",
+          "value": "018f1234-5678-7890-abcd-ef1234567890",
+          "description": ""
+        }
+      ],
       "headers": [
         {
           "name": "Content-Type",
@@ -162,9 +273,17 @@
       "name": "DELETE /users/:id",
       "parentId": "fld_users",
       "method": "DELETE",
-      "url": "{{ baseUrl }}/users/{{ userId }}",
-      "description": "Não é possível remover o próprio usuário autenticado.",
-      "metaSortKey": 4
+      "url": "{{ baseUrl }}/users/:id",
+      "description": "Não é possível remover o próprio usuário autenticado. Substitua `:id` pelo UUID do usuário.",
+      "metaSortKey": 5,
+      "parameters": [
+        {
+          "id": "pair_req_fld_users_4_id",
+          "name": "id",
+          "value": "018f1234-5678-7890-abcd-ef1234567890",
+          "description": ""
+        }
+      ]
     },
     {
       "_id": "fld_brands",
@@ -204,8 +323,29 @@
       "parentId": "fld_brands",
       "method": "GET",
       "url": "{{ baseUrl }}/brands",
-      "description": "",
-      "metaSortKey": 1
+      "description": "Lista paginada. Filtro `name`: busca parcial pelo nome da marca (ex.: Toyota). Ative na aba **Query** ou use `filterBrandName` no environment.",
+      "metaSortKey": 1,
+      "parameters": [
+        {
+          "id": "pair_req_fld_brands_1_first",
+          "name": "first",
+          "value": "{{ listFirst }}",
+          "description": "Máximo de itens (1–100, padrão 25)"
+        },
+        {
+          "id": "pair_req_fld_brands_1_skip",
+          "name": "skip",
+          "value": "{{ listSkip }}",
+          "description": "Offset da paginação"
+        },
+        {
+          "id": "pair_req_fld_brands_1_name",
+          "name": "name",
+          "value": "{{ filterBrandName }}",
+          "description": "Busca parcial pelo nome da marca",
+          "disabled": true
+        }
+      ]
     },
     {
       "_id": "req_fld_brands_2",
@@ -213,9 +353,17 @@
       "name": "GET /brands/:id",
       "parentId": "fld_brands",
       "method": "GET",
-      "url": "{{ baseUrl }}/brands/{{ brandId }}",
-      "description": "",
-      "metaSortKey": 2
+      "url": "{{ baseUrl }}/brands/:id",
+      "description": "Substitua `:id` pelo UUID da marca.",
+      "metaSortKey": 2,
+      "parameters": [
+        {
+          "id": "pair_req_fld_brands_2_id",
+          "name": "id",
+          "value": "018f1234-5678-7890-abcd-ef1234567890",
+          "description": ""
+        }
+      ]
     },
     {
       "_id": "req_fld_brands_3",
@@ -223,9 +371,17 @@
       "name": "PATCH /brands/:id",
       "parentId": "fld_brands",
       "method": "PATCH",
-      "url": "{{ baseUrl }}/brands/{{ brandId }}",
-      "description": "",
+      "url": "{{ baseUrl }}/brands/:id",
+      "description": "Substitua `:id` pelo UUID da marca.",
       "metaSortKey": 3,
+      "parameters": [
+        {
+          "id": "pair_req_fld_brands_3_id",
+          "name": "id",
+          "value": "018f1234-5678-7890-abcd-ef1234567890",
+          "description": ""
+        }
+      ],
       "headers": [
         {
           "name": "Content-Type",
@@ -243,9 +399,17 @@
       "name": "DELETE /brands/:id",
       "parentId": "fld_brands",
       "method": "DELETE",
-      "url": "{{ baseUrl }}/brands/{{ brandId }}",
-      "description": "",
-      "metaSortKey": 4
+      "url": "{{ baseUrl }}/brands/:id",
+      "description": "Substitua `:id` pelo UUID da marca.",
+      "metaSortKey": 4,
+      "parameters": [
+        {
+          "id": "pair_req_fld_brands_4_id",
+          "name": "id",
+          "value": "018f1234-5678-7890-abcd-ef1234567890",
+          "description": ""
+        }
+      ]
     },
     {
       "_id": "fld_models",
@@ -265,7 +429,7 @@
       "parentId": "fld_models",
       "method": "POST",
       "url": "{{ baseUrl }}/models",
-      "description": "Execute POST /brands antes ou informe `brandId` manualmente.",
+      "description": "Substitua `brandId` pelo UUID retornado em POST /brands, ou use POST /models (sem marca).",
       "metaSortKey": 0,
       "headers": [
         {
@@ -275,7 +439,7 @@
       ],
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"name\": \"Corolla\",\n  \"brandId\": \"{{ brandId }}\"\n}"
+        "text": "{\n  \"name\": \"Corolla\",\n  \"brandId\": \"018f1234-5678-7890-abcd-ef1234567890\"\n}"
       }
     },
     {
@@ -305,8 +469,36 @@
       "parentId": "fld_models",
       "method": "GET",
       "url": "{{ baseUrl }}/models",
-      "description": "",
-      "metaSortKey": 2
+      "description": "Lista paginada. Filtros: `name` (modelo), `brandId` (UUID da marca). Ative na aba **Query** ou use `filterModel*` no environment.",
+      "metaSortKey": 2,
+      "parameters": [
+        {
+          "id": "pair_req_fld_models_2_first",
+          "name": "first",
+          "value": "{{ listFirst }}",
+          "description": "Máximo de itens (1–100, padrão 25)"
+        },
+        {
+          "id": "pair_req_fld_models_2_skip",
+          "name": "skip",
+          "value": "{{ listSkip }}",
+          "description": "Offset da paginação"
+        },
+        {
+          "id": "pair_req_fld_models_2_name",
+          "name": "name",
+          "value": "{{ filterModelName }}",
+          "description": "Busca parcial pelo nome do modelo",
+          "disabled": true
+        },
+        {
+          "id": "pair_req_fld_models_2_brandId",
+          "name": "brandId",
+          "value": "{{ filterModelBrandId }}",
+          "description": "UUID da marca (filtro exato)",
+          "disabled": true
+        }
+      ]
     },
     {
       "_id": "req_fld_models_3",
@@ -314,9 +506,17 @@
       "name": "GET /models/:id",
       "parentId": "fld_models",
       "method": "GET",
-      "url": "{{ baseUrl }}/models/{{ modelId }}",
-      "description": "",
-      "metaSortKey": 3
+      "url": "{{ baseUrl }}/models/:id",
+      "description": "Substitua `:id` pelo UUID do modelo.",
+      "metaSortKey": 3,
+      "parameters": [
+        {
+          "id": "pair_req_fld_models_3_id",
+          "name": "id",
+          "value": "018f1234-5678-7890-abcd-ef1234567890",
+          "description": ""
+        }
+      ]
     },
     {
       "_id": "req_fld_models_4",
@@ -324,9 +524,17 @@
       "name": "PATCH /models/:id",
       "parentId": "fld_models",
       "method": "PATCH",
-      "url": "{{ baseUrl }}/models/{{ modelId }}",
-      "description": "",
+      "url": "{{ baseUrl }}/models/:id",
+      "description": "Substitua `:id` pelo UUID do modelo.",
       "metaSortKey": 4,
+      "parameters": [
+        {
+          "id": "pair_req_fld_models_4_id",
+          "name": "id",
+          "value": "018f1234-5678-7890-abcd-ef1234567890",
+          "description": ""
+        }
+      ],
       "headers": [
         {
           "name": "Content-Type",
@@ -344,9 +552,17 @@
       "name": "PATCH /models/:id (desassociar marca)",
       "parentId": "fld_models",
       "method": "PATCH",
-      "url": "{{ baseUrl }}/models/{{ modelId }}",
-      "description": "",
+      "url": "{{ baseUrl }}/models/:id",
+      "description": "Substitua `:id` pelo UUID do modelo.",
       "metaSortKey": 5,
+      "parameters": [
+        {
+          "id": "pair_req_fld_models_5_id",
+          "name": "id",
+          "value": "018f1234-5678-7890-abcd-ef1234567890",
+          "description": ""
+        }
+      ],
       "headers": [
         {
           "name": "Content-Type",
@@ -364,9 +580,17 @@
       "name": "DELETE /models/:id",
       "parentId": "fld_models",
       "method": "DELETE",
-      "url": "{{ baseUrl }}/models/{{ modelId }}",
-      "description": "",
-      "metaSortKey": 6
+      "url": "{{ baseUrl }}/models/:id",
+      "description": "Substitua `:id` pelo UUID do modelo.",
+      "metaSortKey": 6,
+      "parameters": [
+        {
+          "id": "pair_req_fld_models_6_id",
+          "name": "id",
+          "value": "018f1234-5678-7890-abcd-ef1234567890",
+          "description": ""
+        }
+      ]
     },
     {
       "_id": "fld_vehicles",
@@ -387,7 +611,7 @@
       "parentId": "fld_vehicles",
       "method": "POST",
       "url": "{{ baseUrl }}/vehicles",
-      "description": "Requer `modelId` válido (crie um Model antes).",
+      "description": "Substitua `modelId` pelo UUID retornado em POST /models.",
       "metaSortKey": 0,
       "headers": [
         {
@@ -397,7 +621,7 @@
       ],
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"licensePlate\": \"ABC1D23\",\n  \"chassis\": \"9BWZZZ377VT004251\",\n  \"renavam\": \"12345678901\",\n  \"year\": 2024,\n  \"modelId\": \"{{ modelId }}\"\n}"
+        "text": "{\n  \"licensePlate\": \"ABC1D23\",\n  \"chassis\": \"9BWZZZ377VT004251\",\n  \"renavam\": \"12345678901\",\n  \"year\": 2024,\n  \"modelId\": \"018f1234-5678-7890-abcd-ef1234567890\"\n}"
       }
     },
     {
@@ -407,8 +631,50 @@
       "parentId": "fld_vehicles",
       "method": "GET",
       "url": "{{ baseUrl }}/vehicles",
-      "description": "Primeira chamada popula Redis; repita para observar cache hit.",
-      "metaSortKey": 1
+      "description": "Lista paginada com cache Redis. Filtros: placa, ano, modelId, brandId. Ative na aba **Query** ou use `filterVehicle*` no environment.",
+      "metaSortKey": 1,
+      "parameters": [
+        {
+          "id": "pair_req_fld_vehicles_1_first",
+          "name": "first",
+          "value": "{{ listFirst }}",
+          "description": "Máximo de itens (1–100, padrão 25)"
+        },
+        {
+          "id": "pair_req_fld_vehicles_1_skip",
+          "name": "skip",
+          "value": "{{ listSkip }}",
+          "description": "Offset da paginação"
+        },
+        {
+          "id": "pair_req_fld_vehicles_1_licensePlate",
+          "name": "licensePlate",
+          "value": "{{ filterVehiclePlate }}",
+          "description": "Busca parcial pela placa",
+          "disabled": true
+        },
+        {
+          "id": "pair_req_fld_vehicles_1_year",
+          "name": "year",
+          "value": "{{ filterVehicleYear }}",
+          "description": "Ano do veículo (filtro exato)",
+          "disabled": true
+        },
+        {
+          "id": "pair_req_fld_vehicles_1_modelId",
+          "name": "modelId",
+          "value": "{{ filterVehicleModelId }}",
+          "description": "UUID do modelo",
+          "disabled": true
+        },
+        {
+          "id": "pair_req_fld_vehicles_1_brandId",
+          "name": "brandId",
+          "value": "{{ filterVehicleBrandId }}",
+          "description": "UUID da marca",
+          "disabled": true
+        }
+      ]
     },
     {
       "_id": "req_fld_vehicles_2",
@@ -416,9 +682,17 @@
       "name": "GET /vehicles/:id",
       "parentId": "fld_vehicles",
       "method": "GET",
-      "url": "{{ baseUrl }}/vehicles/{{ vehicleId }}",
-      "description": "",
-      "metaSortKey": 2
+      "url": "{{ baseUrl }}/vehicles/:id",
+      "description": "Substitua `:id` pelo UUID do veículo.",
+      "metaSortKey": 2,
+      "parameters": [
+        {
+          "id": "pair_req_fld_vehicles_2_id",
+          "name": "id",
+          "value": "018f1234-5678-7890-abcd-ef1234567890",
+          "description": ""
+        }
+      ]
     },
     {
       "_id": "req_fld_vehicles_3",
@@ -426,9 +700,17 @@
       "name": "PATCH /vehicles/:id",
       "parentId": "fld_vehicles",
       "method": "PATCH",
-      "url": "{{ baseUrl }}/vehicles/{{ vehicleId }}",
-      "description": "Invalida entradas de cache de veículos.",
+      "url": "{{ baseUrl }}/vehicles/:id",
+      "description": "Invalida entradas de cache de veículos. Substitua `:id` pelo UUID do veículo.",
       "metaSortKey": 3,
+      "parameters": [
+        {
+          "id": "pair_req_fld_vehicles_3_id",
+          "name": "id",
+          "value": "018f1234-5678-7890-abcd-ef1234567890",
+          "description": ""
+        }
+      ],
       "headers": [
         {
           "name": "Content-Type",
@@ -446,9 +728,17 @@
       "name": "DELETE /vehicles/:id",
       "parentId": "fld_vehicles",
       "method": "DELETE",
-      "url": "{{ baseUrl }}/vehicles/{{ vehicleId }}",
-      "description": "",
-      "metaSortKey": 4
+      "url": "{{ baseUrl }}/vehicles/:id",
+      "description": "Substitua `:id` pelo UUID do veículo.",
+      "metaSortKey": 4,
+      "parameters": [
+        {
+          "id": "pair_req_fld_vehicles_4_id",
+          "name": "id",
+          "value": "018f1234-5678-7890-abcd-ef1234567890",
+          "description": ""
+        }
+      ]
     }
   ]
 }
