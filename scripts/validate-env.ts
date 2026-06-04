@@ -8,7 +8,7 @@ config({ quiet: true });
 
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { validateEnvironment } from '../src/config/env-validation.config';
+import { validateEnvironment } from '../src/config/env.config';
 
 /**
  * Environment variables validation script.

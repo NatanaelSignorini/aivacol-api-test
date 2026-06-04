@@ -16,4 +16,14 @@ export default () => ({
   swagger: {
     path: env.SWAGGER_PATH,
   },
+  rabbitmq: {
+    enabled: env.RABBITMQ_ENABLED,
+    url: env.RABBITMQ_URL,
+    exchange: env.RABBITMQ_EXCHANGE,
+  },
+  mongodb: {
+    enabled: env.MONGODB_ENABLED,
+    uri: env.MONGODB_URI,
+    database: env.MONGODB_DATABASE,
+  },
 });
