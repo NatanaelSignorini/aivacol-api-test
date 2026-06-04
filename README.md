@@ -15,7 +15,7 @@ A API permite cadastrar e consultar a frota em uma hierarquia simples: **marca �
 - **Cache Redis** nas consultas padrão de veículos, com invalidação automática em alterações
 - Autenticação **JWT** com papéis `admin` e `operator`
 - Documentação interativa via **Swagger** (`/api/docs`)
-- Integrações opcionais: eventos de veículos no **RabbitMQ** e auditoria de requisições no **MongoDB**
+- Eventos de veículos no **RabbitMQ** e auditoria de requisições no **MongoDB**
 - Testes automatizados (unitários, e2e e integração com SQL Server + Redis)
 
 | Tecnologia | Papel |
@@ -75,11 +75,11 @@ flowchart LR
   Client[Cliente HTTP] --> API[NestJS API]
   API --> SQL[(SQL Server)]
   API --> Redis[(Redis cache)]
-  API -.->|opcional| RMQ[RabbitMQ]
-  API -.->|opcional| Mongo[(MongoDB audit)]
+  API --> RMQ[RabbitMQ]
+  API --> Mongo[(MongoDB audit)]
 ```
 
-Linhas tracejadas = serviços controlados por `RABBITMQ_ENABLED` e `MONGODB_ENABLED` no `.env`. No caminho recomendado (Docker completo), ambos ficam habilitados.
+SQL Server persiste a frota; Redis acelera consultas de veículos; RabbitMQ publica eventos de CRUD; MongoDB registra auditoria das requisições HTTP.
 
 ---
 
@@ -135,7 +135,7 @@ O seed também carrega marcas, modelos e veículos de demonstração a partir de
 
 ## Tutorial: primeiro fluxo na API
 
-Este passo a passo usa o **Swagger** em http://localhost:4000/api/docs. O mesmo fluxo funciona com curl, Postman ou Insomnia (veja a seção seguinte).
+Este passo a passo usa o **Swagger** em http://localhost:4000/api/docs. O mesmo fluxo funciona com curl ou qualquer cliente HTTP.
 
 ### Passo 1 — Login
 
@@ -232,34 +232,6 @@ Tente `DELETE /brands/:id` em uma marca que ainda possui models vinculados. A AP
 
 ---
 
-## Testar com Postman ou Insomnia
-
-Há coleções prontas na pasta [`api-client/`](api-client/), com environment **Local** embutido em cada arquivo.
-
-### Postman
-
-Arquivo: [`api-client/aivacol-api.postman_collection.json`](api-client/aivacol-api.postman_collection.json)
-
-1. **Import** → selecione o JSON (cria coleção + environment)
-2. Selecione o environment **Aivacol API — Local**
-3. Execute **Auth → POST /auth/login** — o script salva `accessToken` automaticamente a partir de `data.login.accessToken`
-4. Explore as pastas **Brands**, **Models**, **Vehicles** e **Users**
-
-### Insomnia
-
-Arquivo: [`api-client/aivacol-api.insomnia.json`](api-client/aivacol-api.insomnia.json)
-
-1. **Application** → **Import/Export** → **Import Data** → **From File** → selecione o JSON
-2. Selecione o environment **Aivacol API — Local** (ícone de olho no canto superior)
-3. Execute **Auth → POST /auth/login** — copie `data.login.accessToken` da resposta para a variável `accessToken` no environment
-4. Explore as pastas **Brands**, **Models**, **Vehicles** e **Users**
-
-> Nos `GET` de listagem no Insomnia, use a aba **Query** para ativar filtros ou preencha as variáveis `filter*` no environment.
-
-Variáveis já configuradas em ambos: `baseUrl` = `http://localhost:4000/api/v1`, credenciais admin do seed.
-
----
-
 ## Autenticação e papéis
 
 Todas as rotas exigem JWT, **exceto** `POST /auth/login` (pública, com rate limit extra).
@@ -285,7 +257,7 @@ Prefixo global: `API_PREFIX` (padrão `api/v1`).
 | Vehicles | CRUD `/vehicles` | cache Redis em GET padrão; DELETE admin |
 | Users | CRUD `/users`, `GET /users/me` | admin exceto `/me` |
 
-Detalhes de parâmetros, filtros e schemas: use o **Swagger** ou as coleções Postman/Insomnia.
+Detalhes de parâmetros, filtros e schemas: use o **Swagger**.
 
 ---
 
@@ -416,7 +388,6 @@ src/config/      # env, database, cache, swagger
 test/e2e/        # Testes e2e com mocks (HTTP, sem Docker)
 test/integration/# Testes com SQL Server + Redis (AppModule real)
 test/fixtures/   # Dados/factories para testes
-api-client/      # Coleções Postman e Insomnia
 docker-compose.yml
 ```
 
