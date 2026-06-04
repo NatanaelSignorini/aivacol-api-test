@@ -17,6 +17,8 @@ import { AuthService } from '../../src/modules/auth/auth.service';
 import { JwtAuthGuard } from '../../src/modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../src/modules/auth/guards/roles.guard';
 import { JwtStrategy } from '../../src/modules/auth/jwt.strategy';
+import { BrandsController } from '../../src/modules/brands/brands.controller';
+import { BrandsService } from '../../src/modules/brands/brands.service';
 import { Brand } from '../../src/modules/brands/entities/brand.entity';
 import { VehicleEventsPublisher } from '../../src/modules/messaging/publishers/vehicle-events.publisher';
 import { Model } from '../../src/modules/models/entities/model.entity';
@@ -27,19 +29,54 @@ import { Vehicle } from '../../src/modules/vehicles/entities/vehicle.entity';
 import { VehiclesController } from '../../src/modules/vehicles/vehicles.controller';
 import { VehiclesService } from '../../src/modules/vehicles/vehicles.service';
 import { itemFrom, nodesFrom } from '../common/api-response.util';
-import { mockOperatorUser, mockUser, request } from '../common/e2e-app';
-import { createFindAndCount } from '../common/in-memory-repository.util';
+import { mockOperatorUser, mockUser, request } from '../common/e2e/create-test-app';
+import { createFindAndCount } from '../common/e2e/in-memory-repository.util';
 
 type ModelRecord = Model;
 type VehicleRecord = Vehicle;
 
 function createInMemoryBrandsRepository() {
+  const store = new Map<string, Brand>();
+
   return {
-    create: jest.fn(),
-    save: jest.fn(),
-    find: jest.fn().mockResolvedValue([]),
-    findOne: jest.fn().mockResolvedValue(null),
-    remove: jest.fn(),
+    create: jest.fn((data: Partial<Brand>) => Object.assign(new Brand(), data)),
+    save: jest.fn(async (brand: Brand) => {
+      if (!brand.id) {
+        brand.id = uuidv7();
+        brand.createdAt = new Date();
+        brand.updatedAt = new Date();
+      } else {
+        brand.updatedAt = new Date();
+      }
+
+      store.set(brand.id, { ...brand });
+      return { ...brand };
+    }),
+    find: jest.fn(async () =>
+      [...store.values()].sort((a, b) => a.name.localeCompare(b.name)),
+    ),
+    findAndCount: createFindAndCount(
+      () => [...store.values()],
+      (a, b) => a.name.localeCompare(b.name),
+    ),
+    findOne: jest.fn(async ({ where }: { where: Partial<Brand> }) => {
+      if (where.id) {
+        return store.get(where.id) ?? null;
+      }
+
+      if (where.name) {
+        return (
+          [...store.values()].find((brand) => brand.name === where.name) ?? null
+        );
+      }
+
+      return null;
+    }),
+    remove: jest.fn(async (brand: Brand) => {
+      store.delete(brand.id);
+      return brand;
+    }),
+    clear: () => store.clear(),
   };
 }
 
@@ -76,6 +113,11 @@ function createInMemoryModelsRepository() {
 
       return null;
     }),
+    count: jest.fn(
+      async ({ where }: { where: Partial<ModelRecord> }) =>
+        [...store.values()].filter((model) => model.brandId === where.brandId)
+          .length,
+    ),
     remove: jest.fn(async (model: ModelRecord) => {
       store.delete(model.id);
       return model;
@@ -247,9 +289,15 @@ async function createVehiclesTestApp(): Promise<INestApplication<App>> {
         },
       }),
     ],
-    controllers: [AuthController, ModelsController, VehiclesController],
+    controllers: [
+      AuthController,
+      BrandsController,
+      ModelsController,
+      VehiclesController,
+    ],
     providers: [
       AuthService,
+      BrandsService,
       ModelsService,
       VehiclesService,
       JwtStrategy,
@@ -358,11 +406,25 @@ describe('Vehicles (e2e)', () => {
     return itemFrom(response.body, 'login').accessToken;
   }
 
+  async function createBrand(
+    token: string,
+    name = `Brand-${uuidv7()}`,
+  ): Promise<string> {
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/brands')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name })
+      .expect(201);
+
+    return itemFrom(response.body, 'brand').id;
+  }
+
   async function createModel(token: string, name = 'Corolla'): Promise<string> {
+    const brandId = await createBrand(token);
     const response = await request(app.getHttpServer())
       .post('/api/v1/models')
       .set('Authorization', `Bearer ${token}`)
-      .send({ name })
+      .send({ name, brandId })
       .expect(201);
 
     return itemFrom(response.body, 'model').id;

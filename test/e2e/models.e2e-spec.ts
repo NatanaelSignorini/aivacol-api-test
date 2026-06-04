@@ -30,8 +30,8 @@ import {
   mockOperatorUser,
   mockUser,
   request,
-} from '../common/e2e-app';
-import { createFindAndCount } from '../common/in-memory-repository.util';
+} from '../common/e2e/create-test-app';
+import { createFindAndCount } from '../common/e2e/in-memory-repository.util';
 
 type BrandRecord = Brand;
 type ModelRecord = Model;
@@ -198,6 +198,11 @@ function createInMemoryModelsRepository(
       store.delete(model.id);
       return model;
     }),
+    count: jest.fn(
+      async ({ where }: { where: Partial<ModelRecord> }) =>
+        [...store.values()].filter((model) => model.brandId === where.brandId)
+          .length,
+    ),
     clear: () => store.clear(),
   };
 }
@@ -333,20 +338,58 @@ describe('Models (e2e)', () => {
     return itemFrom(response.body, 'login').accessToken;
   }
 
+  async function createBrand(token: string, name: string): Promise<string> {
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/brands')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name })
+      .expect(201);
+
+    return itemFrom(response.body, 'brand').id;
+  }
+
+  async function createModel(
+    token: string,
+    name: string,
+    brandId: string,
+  ): Promise<string> {
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/models')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name, brandId })
+      .expect(201);
+
+    return itemFrom(response.body, 'model').id;
+  }
+
   it('returns 401 for unauthenticated create request', async () => {
     await request(app.getHttpServer())
       .post('/api/v1/models')
-      .send({ name: 'Corolla' })
+      .send({
+        name: 'Corolla',
+        brandId: '018f1234-5678-7890-abcd-ef1234567890',
+      })
       .expect(401);
+  });
+
+  it('returns 400 when brandId is missing', async () => {
+    const token = await login(mockOperatorUser.email);
+
+    await request(app.getHttpServer())
+      .post('/api/v1/models')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'Corolla' })
+      .expect(400);
   });
 
   it('creates model for authenticated operator', async () => {
     const token = await login(mockOperatorUser.email);
+    const brandId = await createBrand(token, 'Toyota');
 
     const response = await request(app.getHttpServer())
       .post('/api/v1/models')
       .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'Corolla' })
+      .send({ name: 'Corolla', brandId })
       .expect(201);
 
     const model = itemFrom(response.body, 'model');
@@ -364,7 +407,7 @@ describe('Models (e2e)', () => {
     const brand = await request(app.getHttpServer())
       .post('/api/v1/brands')
       .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'Toyota' })
+      .send({ name: `Toyota-${uuidv7()}` })
       .expect(201);
 
     const response = await request(app.getHttpServer())
@@ -402,11 +445,12 @@ describe('Models (e2e)', () => {
 
   it('lists and retrieves models', async () => {
     const token = await login(mockUser.email);
+    const brandId = await createBrand(token, 'Honda');
 
     const created = await request(app.getHttpServer())
       .post('/api/v1/models')
       .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'Civic' })
+      .send({ name: 'Civic', brandId })
       .expect(201);
 
     const listResponse = await request(app.getHttpServer())
@@ -433,17 +477,17 @@ describe('Models (e2e)', () => {
     const brand = await request(app.getHttpServer())
       .post('/api/v1/brands')
       .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'Honda' })
+      .send({ name: `Honda-${uuidv7()}` })
       .expect(201);
 
+    const brandItem = itemFrom(brand.body, 'brand');
     const created = await request(app.getHttpServer())
       .post('/api/v1/models')
       .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'Fit' })
+      .send({ name: 'Fit', brandId: brandItem.id })
       .expect(201);
 
     const createdModel = itemFrom(created.body, 'model');
-    const brandItem = itemFrom(brand.body, 'brand');
     const updated = await request(app.getHttpServer())
       .patch(`/api/v1/models/${createdModel.id}`)
       .set('Authorization', `Bearer ${token}`)
@@ -461,7 +505,7 @@ describe('Models (e2e)', () => {
       name: 'City',
       brand: {
         id: brandItem.id,
-        name: 'Honda',
+        name: brandItem.name,
         createdAt: brandItem.createdAt,
         updatedAt: brandItem.updatedAt,
         createdBy: brandItem.createdBy,
@@ -471,11 +515,12 @@ describe('Models (e2e)', () => {
 
   it('returns 403 for operator on DELETE', async () => {
     const adminToken = await login(mockUser.email);
+    const brandId = await createBrand(adminToken, 'Delete Brand');
 
     const created = await request(app.getHttpServer())
       .post('/api/v1/models')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ name: 'To Delete' })
+      .send({ name: 'To Delete', brandId })
       .expect(201);
 
     const operatorToken = await login(mockOperatorUser.email);
@@ -488,11 +533,12 @@ describe('Models (e2e)', () => {
 
   it('allows admin to DELETE model', async () => {
     const token = await login(mockUser.email);
+    const brandId = await createBrand(token, 'Disposable Brand');
 
     const created = await request(app.getHttpServer())
       .post('/api/v1/models')
       .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'Disposable' })
+      .send({ name: 'Disposable', brandId })
       .expect(201);
 
     const createdModel = itemFrom(created.body, 'model');

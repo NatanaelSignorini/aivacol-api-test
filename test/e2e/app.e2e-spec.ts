@@ -1,5 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
-import { createTestApp } from '../common/e2e-app';
+import { createTestApp } from '../common/e2e/create-test-app';
 
 describe('Application (e2e)', () => {
   let app: INestApplication;

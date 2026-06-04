@@ -19,6 +19,7 @@ import { JwtStrategy } from '../../src/modules/auth/jwt.strategy';
 import { BrandsController } from '../../src/modules/brands/brands.controller';
 import { BrandsService } from '../../src/modules/brands/brands.service';
 import { Brand } from '../../src/modules/brands/entities/brand.entity';
+import { ModelsService } from '../../src/modules/models/models.service';
 import { UsersService } from '../../src/modules/users/users.service';
 import { itemFrom, nodesFrom } from '../common/api-response.util';
 import {
@@ -26,8 +27,8 @@ import {
   mockOperatorUser,
   mockUser,
   request,
-} from '../common/e2e-app';
-import { createFindAndCount } from '../common/in-memory-repository.util';
+} from '../common/e2e/create-test-app';
+import { createFindAndCount } from '../common/e2e/in-memory-repository.util';
 
 type BrandRecord = Brand;
 
@@ -80,6 +81,7 @@ function createInMemoryBrandsRepository() {
 
 async function createBrandsTestApp(
   usersServiceOverride?: Partial<UsersService>,
+  modelsServiceOverride?: Partial<ModelsService>,
 ): Promise<INestApplication<App>> {
   const brandsRepository = createInMemoryBrandsRepository();
 
@@ -127,6 +129,13 @@ async function createBrandsTestApp(
       {
         provide: getRepositoryToken(Brand),
         useValue: brandsRepository,
+      },
+      {
+        provide: ModelsService,
+        useValue: {
+          countByBrandId: jest.fn().mockResolvedValue(0),
+          ...modelsServiceOverride,
+        },
       },
       {
         provide: APP_FILTER,
@@ -304,6 +313,48 @@ describe('Brands (e2e)', () => {
       .get(`/api/v1/brands/${createdBrand.id}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(404);
+  });
+
+  it('returns 409 when models reference the brand on DELETE', async () => {
+    const conflictApp = await createBrandsTestApp(
+      {
+        findByEmail: jest.fn().mockImplementation(async (email: string) => {
+          if (email === mockUser.email) {
+            return mockUser;
+          }
+
+          return null;
+        }),
+      },
+      {
+        countByBrandId: jest.fn().mockResolvedValue(1),
+      },
+    );
+
+    const loginResponse = await request(conflictApp.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: mockUser.email, password: 'Password1!' })
+      .expect(200);
+
+    const token = itemFrom(loginResponse.body, 'login').accessToken;
+
+    const created = await request(conflictApp.getHttpServer())
+      .post('/api/v1/brands')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'Referenced Brand' })
+      .expect(201);
+
+    const response = await request(conflictApp.getHttpServer())
+      .delete(`/api/v1/brands/${itemFrom(created.body, 'brand').id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(409);
+
+    expect(response.body).toMatchObject({
+      statusCode: 409,
+      message: expect.stringContaining('models reference it'),
+    });
+
+    await conflictApp.close();
   });
 
   it('returns 409 for duplicate brand name with standardized envelope', async () => {

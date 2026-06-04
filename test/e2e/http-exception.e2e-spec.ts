@@ -7,7 +7,7 @@ import {
   mockOperatorUser,
   mockUser,
   request,
-} from '../common/e2e-app';
+} from '../common/e2e/create-test-app';
 
 jest.mock('bcryptjs', () => ({
   compare: jest.fn(),
