@@ -1,98 +1,196 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Aivacol API — Gestão de Frota
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend NestJS do módulo **Gestão de Frota** da plataforma Aivacol (teste técnico). Expõe CRUD de marcas, modelos e veículos com JWT, cache Redis nas consultas de veículos, documentação OpenAPI e integrações opcionais (RabbitMQ e auditoria em MongoDB).
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+| Stack | Uso |
+|-------|-----|
+| NestJS 11 | API REST |
+| SQL Server + TypeORM | Persistência e migrations |
+| Redis | Cache de listagem/consulta de veículos |
+| JWT | Todas as rotas protegidas, exceto login |
+| Swagger | UI em `/api/docs` (configurável) |
 
-## Description
+**Gerenciador de pacotes:** [Yarn](https://yarnpkg.com/)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+---
 
-## Project setup
+## Pré-requisitos
+
+- **Node.js** 18 ou superior
+- **Yarn** 1.x ou Berry
+- **Docker** e **Docker Compose** (recomendado para subir SQL Server, Redis e stack completa)
+
+---
+
+## Configuração rápida
 
 ```bash
-$ yarn install
+cp .env.example .env
+yarn install
 ```
 
-## Compile and run the project
+Ajuste `JWT_SECRET` (mínimo 32 caracteres) e `DB_PASSWORD` se necessário. O arquivo `.env.example` descreve cada variável e os fluxos Docker.
+
+### Usuário padrão (seed)
+
+Após `yarn seed` (ou no entrypoint do Docker), use:
+
+| Campo | Valor |
+|-------|--------|
+| E-mail | `admin@aivacol.com` |
+| Senha | `Aivacol123!` |
+| Nickname | `aivacol` |
+| Papel | Admin |
+
+O seed também carrega dados de demonstração de `src/database/seed-data/fleet.seed.json` (marcas, modelos e veículos).
+
+---
+
+## Executar a API
+
+### Opção A — Stack completa no Docker (recomendado para avaliação)
+
+Sobe API, SQL Server, Redis, RabbitMQ e MongoDB. Migrations e seed rodam automaticamente no entrypoint.
 
 ```bash
-# development
-$ yarn run start
-
-# watch mode
-$ yarn run start:dev
-
-# production mode
-$ yarn run start:prod
+docker compose -f docker-compose.yml up --build api
 ```
 
-## Run tests
+O Compose sobe **todos** os serviços que a API depende (SQL Server, Redis, RabbitMQ, MongoDB), mas o terminal mostra **só os logs da API** — incluindo entrypoint, migrations e seed.
+
+Atalho opcional: `yarn docker:up` (mesmo comando). Para parar: `yarn docker:down` ou `docker compose -f docker-compose.yml down`.
+
+Logs só do MongoDB (outro terminal): `docker compose -f docker-compose.yml logs -f mongodb`.
+
+- API: `http://localhost:4000` (porta definida em `PORT`)
+- Prefixo REST: `http://localhost:4000/api/v1`
+- Swagger UI: `http://localhost:4000/api/docs` (ou valor de `SWAGGER_PATH`)
+- RabbitMQ Management: `http://localhost:15672` (guest / guest)
+
+Com a stack completa, o `.env` padrão usa `RABBITMQ_ENABLED=true` e `MONGODB_ENABLED=true` (hostnames `rabbitmq` e `mongodb` na rede Docker).
+
+### Opção B — Infra no Docker, API no host
+
+Útil para desenvolvimento com hot reload. No `.env`, use `DB_HOST=localhost`, `REDIS_HOST=localhost` e desative RabbitMQ/MongoDB (`RABBITMQ_ENABLED=false`, `MONGODB_ENABLED=false`).
 
 ```bash
-# unit tests
-$ yarn run test
-
-# e2e tests
-$ yarn run test:e2e
-
-# test coverage
-$ yarn run test:cov
+docker compose up sqlserver redis -d
+yarn db:create
+yarn migration:run
+yarn seed
+yarn start:dev
 ```
 
-## Deployment
+Para testes de integração, use o mesmo par `sqlserver` + `redis` e execute `yarn test:integration`.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### Produção local
 
 ```bash
-$ yarn install -g @nestjs/mau
-$ mau deploy
+yarn build
+yarn start:prod
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### SQL Server com falha ao subir
 
-## Resources
+```bash
+docker compose -f docker-compose.yml down -v
+docker compose -f docker-compose.yml up --build api
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+---
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## Swagger (OpenAPI)
 
-## Support
+1. Com a API rodando, abra `http://localhost:4000/api/docs` (ajuste host/porta conforme `.env`).
+2. Em **Auth**, execute `POST /auth/login` com o corpo:
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+   ```json
+   {
+     "email": "admin@aivacol.com",
+     "password": "Aivacol123!"
+   }
+   ```
 
-## Stay in touch
+3. Copie `accessToken` da resposta.
+4. Clique em **Authorize**, informe `Bearer <accessToken>` (o UI adiciona o prefixo se necessário).
+5. Teste os endpoints protegidos (`Brands`, `Models`, `Vehicles`, `Users`).
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+O documento OpenAPI JSON fica em `/{SWAGGER_PATH}-json` (ex.: `/api/docs-json`).
 
-## License
+---
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## Testes automatizados
+
+| Comando | Escopo |
+|---------|--------|
+| `yarn test:unit` | Regras de negócio, services, DTOs (`src/**/*.spec.ts`) |
+| `yarn test:e2e` | HTTP com mocks, sem Docker |
+| `yarn test` | Unitários + e2e |
+| `yarn test:integration` | `AppModule` real com SQL Server e Redis |
+| `yarn test:cov` | Cobertura (projeto unit) |
+| `yarn check` | Biome (lint + format) |
+| `yarn check:fix` | Corrige formatação/lint quando possível |
+
+**Integração:** exige infra rodando:
+
+```bash
+docker compose up sqlserver redis -d
+yarn test:integration
+```
+
+Se SQL Server ou Redis não estiverem acessíveis, a suíte de integração é ignorada (exit 0) para não quebrar `yarn test` em ambientes sem Docker.
+
+Antes de entregar alterações:
+
+```bash
+yarn check:fix
+yarn test
+```
+
+---
+
+## Scripts úteis
+
+| Script | Descrição |
+|--------|-----------|
+| `yarn start` / `yarn start:dev` | API (valida `.env` antes) |
+| `yarn migration:run` | Aplica migrations TypeORM |
+| `yarn migration:revert` | Reverte última migration |
+| `yarn seed` | Usuário admin + frota mock |
+| `yarn docker:up` / `yarn docker:down` | Atalhos para `docker compose -f docker-compose.yml up --build api` e `down` |
+
+---
+
+## Recursos da API
+
+Prefixo global: `API_PREFIX` (padrão `api/v1`).
+
+| Módulo | Rotas (exemplos) |
+|--------|------------------|
+| Auth | `POST /auth/login` (público), `POST /auth/logout` |
+| Brands | CRUD `/brands` |
+| Models | CRUD `/models` |
+| Vehicles | CRUD `/vehicles` (cache Redis em GET list/id) |
+| Users | CRUD `/users` (admin) |
+
+Respostas de erro seguem envelope padronizado (`HttpExceptionFilter`).
+
+---
+
+## Estrutura do repositório
+
+```
+src/modules/     # Domínio (auth, brands, models, vehicles, users, …)
+src/database/    # Migrations, seeds, mock JSON
+test/e2e/        # Testes e2e com mocks
+test/integration/# Testes com SQL Server + Redis
+docker-compose.yml
+```
+
+Guia detalhado para agentes e convenções de implementação: [`AGENTS.md`](./AGENTS.md).
+
+---
+
+## Licença
+
+Projeto privado (`UNLICENSED`).
