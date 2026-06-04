@@ -8,7 +8,7 @@ services:
       - .:/usr/src/app
       - api_node_modules:/usr/src/app/node_modules
     ports:
-      - 127.0.0.1:${PORT:-4000}:${PORT:-4000}
+      - ${PORT:-4000}:${PORT:-4000}
     env_file:
       - .env
     networks:
@@ -34,7 +34,7 @@ services:
       MSSQL_SA_PASSWORD: ${DB_PASSWORD}
       MSSQL_PID: Developer
     ports:
-      - 127.0.0.1:${DB_PORT:-1433}:1433
+      - ${DB_PORT:-1433}:1433
     volumes:
       - sqlserver_data:/var/opt/mssql
     healthcheck:
@@ -54,7 +54,7 @@ services:
     networks:
       - backend
     ports:
-      - 127.0.0.1:${REDIS_PORT:-6379}:6379
+      - ${REDIS_PORT:-6379}:6379
     volumes:
       - redis_data:/data
     healthcheck:
@@ -69,8 +69,8 @@ services:
     networks:
       - backend
     ports:
-      - 127.0.0.1:${RABBITMQ_PORT:-5672}:5672
-      - 127.0.0.1:${RABBITMQ_MANAGEMENT_PORT:-15672}:15672
+      - ${RABBITMQ_PORT:-5672}:5672
+      - ${RABBITMQ_MANAGEMENT_PORT:-15672}:15672
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
@@ -86,7 +86,7 @@ services:
     networks:
       - backend
     ports:
-      - 127.0.0.1:${MONGODB_PORT:-27017}:27017
+      - ${MONGODB_PORT:-27017}:27017
     volumes:
       - mongodb_data:/data/db
     # Logs separados: docker compose -f docker-compose.yml up --build api

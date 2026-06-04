@@ -26,6 +26,6 @@ async function bootstrap() {
   const swaggerPath = configService.get<string>('swagger.path') ?? 'api/docs';
   setupSwagger(app, swaggerPath);
 
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 }
 bootstrap();
