@@ -23,6 +23,10 @@ export class BrandsService {
     private readonly modelsService: ModelsService,
   ) {}
 
+  /**
+   * Cria uma marca após validar unicidade do nome (trim).
+   * Persiste com o usuário autenticado como `createdBy`.
+   */
   async create(
     input: CreateBrandInput,
     createdBy: EntityId,
@@ -39,6 +43,10 @@ export class BrandsService {
     return this.toResponse(saved);
   }
 
+  /**
+   * Lista marcas com paginação e filtro opcional por nome (LIKE parcial).
+   * Ordena alfabeticamente por nome.
+   */
   async findAll(
     query: BrandsListQueryDto,
   ): Promise<Connection<BrandResponseDto>> {
@@ -62,12 +70,17 @@ export class BrandsService {
     );
   }
 
+  /** Busca uma marca por id; lança 404 se não existir. */
   async findOne(id: EntityId): Promise<BrandResponseDto> {
     const brand = await this.findEntityOrFail(id);
 
     return this.toResponse(brand);
   }
 
+  /**
+   * Atualiza o nome da marca quando informado.
+   * Revalida unicidade do nome excluindo o registro atual.
+   */
   async update(
     id: EntityId,
     input: UpdateBrandInput,
@@ -84,6 +97,10 @@ export class BrandsService {
     return this.toResponse(saved);
   }
 
+  /**
+   * Remove a marca se não houver models vinculados.
+   * Lança 409 Conflict quando existem models referenciando a brand.
+   */
   async remove(id: EntityId): Promise<void> {
     const brand = await this.findEntityOrFail(id);
     const modelCount = await this.modelsService.countByBrandId(id);
@@ -97,6 +114,7 @@ export class BrandsService {
     await this.brandsRepository.remove(brand);
   }
 
+  /** Carrega a entidade Brand ou lança NotFoundException. */
   private async findEntityOrFail(id: EntityId): Promise<Brand> {
     const brand = await this.brandsRepository.findOne({ where: { id } });
 
@@ -107,6 +125,7 @@ export class BrandsService {
     return brand;
   }
 
+  /** Garante que não exista outra marca com o mesmo nome (case-sensitive após trim). */
   private async assertNameIsUnique(
     name: string,
     excludeId?: EntityId,
@@ -123,6 +142,7 @@ export class BrandsService {
     }
   }
 
+  /** Converte entidade TypeORM em DTO de resposta da API. */
   private toResponse(brand: Brand): BrandResponseDto {
     return {
       id: brand.id,

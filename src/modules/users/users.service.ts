@@ -23,10 +23,15 @@ export class UsersService {
     private readonly usersRepository: Repository<User>,
   ) {}
 
+  /** Busca usuário por id sem transformar em DTO (uso interno e auth). */
   findById(id: EntityId): Promise<User | null> {
     return this.usersRepository.findOne({ where: { id } });
   }
 
+  /**
+   * Busca usuário por e-mail incluindo `passwordHash` para validação no login.
+   * Usa select explícito para expor hash apenas neste fluxo.
+   */
   findByEmail(email: string): Promise<User | null> {
     return this.usersRepository.findOne({
       where: { email },
@@ -34,6 +39,10 @@ export class UsersService {
     });
   }
 
+  /**
+   * Cria usuário com nickname e e-mail únicos e senha hasheada (bcrypt).
+   * Normaliza e-mail para minúsculas e faz trim nos campos textuais.
+   */
   async create(
     input: CreateUserInput,
     createdBy: EntityId,
@@ -57,6 +66,10 @@ export class UsersService {
     return this.toResponse(saved);
   }
 
+  /**
+   * Lista usuários com paginação e filtros opcionais (email, name, nickname, role).
+   * Ordena por nickname ascendente.
+   */
   async findAll(
     query: UsersListQueryDto,
   ): Promise<Connection<UserResponseDto>> {
@@ -75,6 +88,7 @@ export class UsersService {
     );
   }
 
+  /** Monta cláusula WHERE da listagem conforme filtros informados na query. */
   private buildListWhere(
     query: UsersListQueryDto,
   ): FindOptionsWhere<User> | FindOptionsWhere<User>[] {
@@ -99,12 +113,17 @@ export class UsersService {
     return where;
   }
 
+  /** Busca usuário por id; lança 404 se não existir. */
   async findOne(id: EntityId): Promise<UserResponseDto> {
     const user = await this.findEntityOrFail(id);
 
     return this.toResponse(user);
   }
 
+  /**
+   * Atualiza campos parciais do usuário, revalidando unicidade de nickname/e-mail.
+   * Re-hash da senha quando `password` é informado.
+   */
   async update(id: EntityId, input: UpdateUserInput): Promise<UserResponseDto> {
     const user = await this.findEntityOrFail(id);
 
@@ -135,6 +154,10 @@ export class UsersService {
     return this.toResponse(saved);
   }
 
+  /**
+   * Remove usuário por id; impede auto-exclusão (400).
+   * Lança 404 se o usuário alvo não existir.
+   */
   async remove(id: EntityId, requestingUserId: EntityId): Promise<void> {
     if (id === requestingUserId) {
       throw new BadRequestException('Cannot delete your own user account');
@@ -144,6 +167,7 @@ export class UsersService {
     await this.usersRepository.remove(user);
   }
 
+  /** Carrega entidade User ou lança NotFoundException. */
   private async findEntityOrFail(id: EntityId): Promise<User> {
     const user = await this.usersRepository.findOne({ where: { id } });
 
@@ -154,6 +178,7 @@ export class UsersService {
     return user;
   }
 
+  /** Garante unicidade de nickname, ignorando o registro em atualização. */
   private async assertNicknameIsUnique(
     nickname: string,
     excludeId?: EntityId,
@@ -170,6 +195,7 @@ export class UsersService {
     }
   }
 
+  /** Garante unicidade de e-mail (normalizado), ignorando o registro em atualização. */
   private async assertEmailIsUnique(
     email: string,
     excludeId?: EntityId,
@@ -186,6 +212,7 @@ export class UsersService {
     }
   }
 
+  /** Converte entidade User em DTO de resposta (sem expor passwordHash). */
   private toResponse(user: User): UserResponseDto {
     return {
       id: user.id,
@@ -199,6 +226,7 @@ export class UsersService {
     };
   }
 
+  /** Campos selecionados na busca por e-mail para autenticação. */
   private readonly authLookupSelect = {
     id: true,
     nickname: true,

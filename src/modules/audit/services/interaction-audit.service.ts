@@ -24,14 +24,17 @@ export class InteractionAuditService implements OnModuleInit, OnModuleDestroy {
 
   constructor(private readonly configService: ConfigService) {}
 
+  /** Indica se a auditoria MongoDB está habilitada via `MONGODB_ENABLED`. */
   private get enabled(): boolean {
     return this.configService.get<boolean>('mongodb.enabled') === true;
   }
 
+  /** URI de conexão MongoDB (fallback para valor padrão de desenvolvimento). */
   private get uri(): string {
     return this.configService.get<string>('mongodb.uri') ?? MONGODB_URI_DEFAULT;
   }
 
+  /** Nome do banco MongoDB onde a collection de auditoria é gravada. */
   private get database(): string {
     return (
       this.configService.get<string>('mongodb.database') ??
@@ -39,6 +42,10 @@ export class InteractionAuditService implements OnModuleInit, OnModuleDestroy {
     );
   }
 
+  /**
+   * Conecta ao MongoDB quando habilitado e cria índice em `occurredAt`.
+   * Falhas de conexão são logadas; a API continua sem auditoria.
+   */
   async onModuleInit(): Promise<void> {
     if (!this.enabled) {
       return;
@@ -64,12 +71,17 @@ export class InteractionAuditService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /** Encerra conexão MongoDB ao desligar o módulo. */
   async onModuleDestroy(): Promise<void> {
     await this.client?.close().catch(() => undefined);
     this.client = null;
     this.collection = null;
   }
 
+  /**
+   * Insere registro de auditoria de interação HTTP no MongoDB.
+   * Ignora silenciosamente quando desabilitado ou se a gravação falhar.
+   */
   async record(entry: InteractionAuditRecord): Promise<void> {
     if (!this.enabled || !this.collection) {
       return;

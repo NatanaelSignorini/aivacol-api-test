@@ -21,6 +21,10 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
+  /**
+   * Autentica por e-mail e senha, validando credenciais com mensagem genérica (401).
+   * Emite access token (TTL de `jwt.expiresIn`) e refresh token (1 dia).
+   */
   async login(input: LoginInput): Promise<LoginResponseDto> {
     const user = await this.usersService.findByEmail(input.email);
 
@@ -65,6 +69,9 @@ export class AuthService {
     };
   }
 
+  /**
+   * Confirma logout no servidor; tokens JWT são stateless e devem ser descartados pelo cliente.
+   */
   logout(): LogoutResponseDto {
     return { message: AUTH_MESSAGE.LOGOUT_SUCCESSFUL };
   }

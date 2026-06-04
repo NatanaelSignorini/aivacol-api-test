@@ -37,6 +37,10 @@ export class ModelsService {
     private readonly vehiclesService: VehiclesService,
   ) {}
 
+  /**
+   * Cria um model vinculado a uma brand existente (`brandId` obrigatório).
+   * Suporta includes opcionais de brand na resposta via query string.
+   */
   async create(
     input: CreateModelInput,
     createdBy: EntityId,
@@ -59,6 +63,10 @@ export class ModelsService {
     );
   }
 
+  /**
+   * Lista models com paginação e filtros opcionais por nome e brandId.
+   * Carrega relação brand quando solicitado via includes.
+   */
   async findAll(
     query: ModelsListQueryDto,
   ): Promise<Connection<ModelResponseDto>> {
@@ -88,6 +96,7 @@ export class ModelsService {
     );
   }
 
+  /** Busca model por id com includes opcionais; lança 404 se não existir. */
   async findOne(
     id: EntityId,
     includeQuery: ModelsIncludeQueryDto = {},
@@ -98,6 +107,10 @@ export class ModelsService {
     return this.toResponse(model, includeOptions);
   }
 
+  /**
+   * Atualiza nome e/ou brandId do model.
+   * Revalida existência da brand quando `brandId` é alterado.
+   */
   async update(
     id: EntityId,
     input: UpdateModelInput,
@@ -123,10 +136,15 @@ export class ModelsService {
     );
   }
 
+  /** Conta models vinculados a uma brand (usado para bloquear delete de brand). */
   async countByBrandId(brandId: EntityId): Promise<number> {
     return this.modelsRepository.count({ where: { brandId } });
   }
 
+  /**
+   * Remove o model se não houver veículos vinculados.
+   * Lança 409 Conflict quando existem vehicles referenciando o model.
+   */
   async remove(id: EntityId): Promise<void> {
     const model = await this.findEntityOrFail(id);
     const vehicleCount = await this.vehiclesService.countByModelId(id);
@@ -140,6 +158,7 @@ export class ModelsService {
     await this.modelsRepository.remove(model);
   }
 
+  /** Monta relações TypeORM conforme opções de include da query. */
   private buildRelations(
     includeOptions: ModelIncludeOptions,
   ): FindOptionsRelations<Model> | undefined {
@@ -150,6 +169,7 @@ export class ModelsService {
     return { brand: true };
   }
 
+  /** Carrega entidade Model com relações opcionais ou lança NotFoundException. */
   private async findEntityOrFail(
     id: EntityId,
     includeOptions: ModelIncludeOptions = {
@@ -168,6 +188,7 @@ export class ModelsService {
     return model;
   }
 
+  /** Verifica se a brand referenciada existe; lança 404 caso contrário. */
   private async assertBrandExists(brandId: EntityId): Promise<void> {
     const brand = await this.brandsRepository.findOne({
       where: { id: brandId },
@@ -178,6 +199,7 @@ export class ModelsService {
     }
   }
 
+  /** Converte entidade Brand em DTO aninhado na resposta do model. */
   private toBrandResponse(brand: Brand): BrandResponseDto {
     return {
       id: brand.id,
@@ -188,6 +210,7 @@ export class ModelsService {
     };
   }
 
+  /** Converte entidade Model em DTO, incluindo brand quando solicitado. */
   private toResponse(
     model: Model,
     includeOptions: ModelIncludeOptions,

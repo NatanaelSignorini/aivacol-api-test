@@ -55,6 +55,10 @@ export class VehiclesService {
     private readonly vehicleEventsPublisher: VehicleEventsPublisher,
   ) {}
 
+  /**
+   * Cria veículo após validar model, normalizar identificadores BR e garantir unicidade.
+   * Invalida cache de listagem, publica evento `vehicle.created` e retorna com includes opcionais.
+   */
   async create(
     input: CreateVehicleInput,
     createdBy: EntityId,
@@ -93,6 +97,10 @@ export class VehiclesService {
     return response;
   }
 
+  /**
+   * Lista veículos com filtros, paginação e includes opcionais.
+   * Usa cache Redis apenas na consulta padrão (sem filtros/includes/paginação customizada).
+   */
   async findAll(
     query: VehiclesListQueryDto,
   ): Promise<Connection<VehicleResponseDto>> {
@@ -130,6 +138,7 @@ export class VehiclesService {
     return connection;
   }
 
+  /** Indica se a listagem padrão (sem filtros/includes) pode ser servida pelo cache Redis. */
   private canUseListCache(
     query: VehiclesListQueryDto,
     includeOptions: VehicleIncludeOptions,
@@ -146,6 +155,7 @@ export class VehiclesService {
     );
   }
 
+  /** Monta filtros WHERE para listagem (placa parcial, modelId, brandId, ano). */
   private buildListWhere(
     query: VehiclesListQueryDto,
   ): FindOptionsWhere<Vehicle> {
@@ -172,6 +182,10 @@ export class VehiclesService {
     return where;
   }
 
+  /**
+   * Busca veículo por id com includes opcionais.
+   * Cacheia resposta por id quando não há includes de model/brand.
+   */
   async findOne(
     id: EntityId,
     includeQuery: VehiclesIncludeQueryDto = {},
@@ -198,10 +212,15 @@ export class VehiclesService {
     return this.toResponse(vehicle, includeOptions);
   }
 
+  /** Indica se a consulta por id pode usar cache (sem includes aninhados). */
   private canUseItemCache(includeOptions: VehicleIncludeOptions): boolean {
     return !includeOptions.includeModel && !includeOptions.includeBrand;
   }
 
+  /**
+   * Atualiza campos parciais do veículo, revalidando model e unicidade de identificadores.
+   * Invalida cache (list + id), publica evento `vehicle.updated`.
+   */
   async update(
     id: EntityId,
     input: UpdateVehicleInput,
@@ -264,6 +283,9 @@ export class VehiclesService {
     return response;
   }
 
+  /**
+   * Remove veículo, invalida cache e publica evento `vehicle.deleted` com snapshot pré-remoção.
+   */
   async remove(
     id: EntityId,
     includeQuery: VehiclesIncludeQueryDto = {},
@@ -276,10 +298,12 @@ export class VehiclesService {
     await this.vehicleEventsPublisher.publishDeleted(snapshot);
   }
 
+  /** Conta veículos vinculados a um model (usado para bloquear delete de model). */
   async countByModelId(modelId: EntityId): Promise<number> {
     return this.vehiclesRepository.count({ where: { modelId } });
   }
 
+  /** Define relações TypeORM (model e brand aninhada) conforme includes solicitados. */
   private buildRelations(
     includeOptions: VehicleIncludeOptions,
   ): FindOptionsRelations<Vehicle> | undefined {
@@ -294,6 +318,7 @@ export class VehiclesService {
     return { model: true };
   }
 
+  /** Carrega entidade Vehicle com relações opcionais ou lança NotFoundException. */
   private async findEntityOrFail(
     id: EntityId,
     includeOptions: VehicleIncludeOptions = {
@@ -313,6 +338,7 @@ export class VehiclesService {
     return vehicle;
   }
 
+  /** Verifica existência do model referenciado; lança 404 se ausente. */
   private async assertModelExists(modelId: EntityId): Promise<void> {
     const model = await this.modelsRepository.findOne({
       where: { id: modelId },
@@ -323,6 +349,10 @@ export class VehiclesService {
     }
   }
 
+  /**
+   * Garante unicidade de placa, chassis e renavam.
+   * Ignora o registro atual quando `excludeId` é informado (update).
+   */
   private async assertUniqueIdentifiers(
     identifiers: {
       licensePlate: string;
@@ -358,6 +388,7 @@ export class VehiclesService {
     }
   }
 
+  /** Remove entradas de cache da listagem e, opcionalmente, do veículo por id. */
   private async invalidateVehicleCache(id?: EntityId): Promise<void> {
     await this.cacheManager.del(VEHICLES_LIST_CACHE_KEY);
 
@@ -366,6 +397,7 @@ export class VehiclesService {
     }
   }
 
+  /** Converte entidade Brand em DTO aninhado na resposta do veículo. */
   private toBrandResponse(brand: Brand): BrandResponseDto {
     return {
       id: brand.id,
@@ -376,6 +408,7 @@ export class VehiclesService {
     };
   }
 
+  /** Converte entidade Model em DTO, incluindo brand quando solicitado. */
   private toModelResponse(
     model: Model,
     includeOptions: VehicleIncludeOptions,
@@ -395,6 +428,7 @@ export class VehiclesService {
     return response;
   }
 
+  /** Converte entidade Vehicle em DTO, incluindo model/brand conforme includes. */
   private toResponse(
     vehicle: Vehicle,
     includeOptions: VehicleIncludeOptions,
