@@ -15,7 +15,7 @@ A API permite cadastrar e consultar a frota em uma hierarquia simples: **marca �
 - **Cache Redis** nas consultas padrão de veículos, com invalidação automática em alterações
 - Autenticação **JWT** com papéis `admin` e `operator`
 - Documentação interativa via **Swagger** (`/api/docs`)
-- Eventos de veículos no **RabbitMQ** e auditoria de requisições no **MongoDB**
+- Eventos de veículos no **RabbitMQ** (módulo `vehicles`) e auditoria assíncrona de requisições via fila → **MongoDB** (módulo `audit`)
 - Testes automatizados (unitários, e2e e integração com SQL Server + Redis)
 
 | Tecnologia | Papel |
@@ -23,6 +23,8 @@ A API permite cadastrar e consultar a frota em uma hierarquia simples: **marca �
 | NestJS 11 | Framework da API REST |
 | SQL Server + TypeORM | Persistência e migrations |
 | Redis | Cache de listagem/consulta de veículos |
+| RabbitMQ | Eventos de CRUD de veículos e fila de auditoria |
+| MongoDB | Persistência dos registros de auditoria HTTP |
 | JWT | Proteção de rotas (exceto login) |
 | Swagger | Documentação OpenAPI |
 | Helmet + Throttler | Segurança HTTP e rate limiting |
@@ -75,11 +77,12 @@ flowchart LR
   Client[Cliente HTTP] --> API[NestJS API]
   API --> SQL[(SQL Server)]
   API --> Redis[(Redis cache)]
-  API --> RMQ[RabbitMQ]
-  API --> Mongo[(MongoDB audit)]
+  API -->|vehicle CRUD| RMQ[RabbitMQ]
+  API -->|audit publish| RMQ
+  RMQ -->|audit consumer| Mongo[(MongoDB audit)]
 ```
 
-SQL Server persiste a frota; Redis acelera consultas de veículos; RabbitMQ publica eventos de CRUD; MongoDB registra auditoria das requisições HTTP.
+SQL Server persiste a frota; Redis acelera consultas de veículos; RabbitMQ publica eventos de CRUD de veículos e enfileira registros de auditoria; um consumer no mesmo processo da API grava a auditoria no MongoDB.
 
 ---
 
@@ -94,7 +97,7 @@ cp .env.example .env
 yarn install
 ```
 
-O `.env.example` já traz valores padrão para rodar com Docker. Ajuste `JWT_SECRET` (mínimo 32 caracteres) e `DB_PASSWORD` se necessário.
+O `.env.example` já traz valores padrão para rodar com Docker (SQL Server, Redis, RabbitMQ e MongoDB). Ajuste `JWT_SECRET` (mínimo 32 caracteres) e `DB_PASSWORD` se necessário.
 
 ### 2. Suba a stack completa
 
@@ -254,7 +257,7 @@ Prefixo global: `API_PREFIX` (padrão `api/v1`).
 | Auth | `POST /auth/login`, `POST /auth/logout` | login público |
 | Brands | CRUD `/brands` | DELETE só admin; 409 se houver models |
 | Models | CRUD `/models` | `brandId` obrigatório no create |
-| Vehicles | CRUD `/vehicles` | cache Redis em GET padrão; DELETE admin |
+| Vehicles | CRUD `/vehicles` | cache Redis em GET padrão; eventos RabbitMQ em mutações; DELETE admin |
 | Users | CRUD `/users`, `GET /users/me` | admin exceto `/me` |
 
 Detalhes de parâmetros, filtros e schemas: use o **Swagger**.
@@ -272,7 +275,7 @@ Detalhes de parâmetros, filtros e schemas: use o **Swagger**.
 
 ### RabbitMQ (eventos de veículos)
 
-Quando `RABBITMQ_ENABLED=true`, a API publica eventos na exchange `aivacol.vehicles`:
+O módulo [`vehicles`](src/modules/vehicles/) publica eventos na exchange `aivacol.vehicles` após create, update e delete:
 
 | Routing key | Quando |
 |-------------|--------|
@@ -284,7 +287,17 @@ UI de monitoramento: http://localhost:15672 (guest / guest).
 
 ### Auditoria MongoDB
 
-Quando `MONGODB_ENABLED=true`, cada requisição HTTP (exceto Swagger) gera um registro com método, path, status, duração e usuário autenticado.
+O módulo [`audit`](src/modules/audit/) intercepta cada requisição HTTP (exceto Swagger) e registra método, path, status, duração e usuário autenticado.
+
+Fluxo assíncrono:
+
+1. `AuditInterceptor` → `InteractionAuditService.record()`
+2. Publicação na fila `aivacol.audit.interactions` (exchange `aivacol.audit`, routing key `interaction.record`)
+3. `InteractionAuditConsumer` (mesmo processo da API) persiste no MongoDB
+
+Se a publicação na fila falhar, a gravação direta no MongoDB é usada como fallback.
+
+Variáveis relacionadas: `RABBITMQ_URL`, `RABBITMQ_AUDIT_EXCHANGE`, `RABBITMQ_AUDIT_QUEUE`, `MONGODB_URI`, `MONGODB_DATABASE`.
 
 ### Segurança HTTP
 
@@ -294,39 +307,6 @@ Quando `MONGODB_ENABLED=true`, cada requisição HTTP (exceto Swagger) gera um r
 - Erros padronizados via `HttpExceptionFilter` (`statusCode`, `message`, `error`, `timestamp`, `path`)
 
 Variáveis de ambiente completas: [`.env.example`](.env.example).
-
----
-
-## Outras formas de executar
-
-### Infra no Docker, API no host (hot reload)
-
-Útil para desenvolvimento local. No `.env`:
-
-- `DB_HOST=localhost`, `REDIS_HOST=localhost`
-- `RABBITMQ_ENABLED=false`, `MONGODB_ENABLED=false`
-
-```bash
-docker compose up sqlserver redis -d
-yarn db:create
-yarn migration:run
-yarn seed
-yarn start:dev
-```
-
-### Produção local
-
-```bash
-yarn build
-yarn start:prod
-```
-
-### SQL Server com falha ao subir
-
-```bash
-docker compose -f docker-compose.yml down -v
-docker compose -f docker-compose.yml up --build api
-```
 
 ---
 
@@ -348,6 +328,14 @@ docker compose -f docker-compose.yml up --build api
 docker compose up sqlserver redis -d
 yarn test:integration
 ```
+
+**API no host** — RabbitMQ e MongoDB também fazem parte da stack. Para rodar localmente com `yarn start:dev`, suba a infra completa ou, no mínimo, SQL Server, Redis, RabbitMQ e MongoDB:
+
+```bash
+docker compose up sqlserver redis rabbitmq mongodb -d
+```
+
+Ajuste no `.env`: `DB_HOST`, `REDIS_HOST`, `RABBITMQ_URL` e `MONGODB_URI` apontando para `localhost`.
 
 Os testes de integração forçam `DB_HOST=localhost` e `REDIS_HOST=localhost`, mesmo que o `.env` use hostnames Docker. Se a infra não estiver acessível, a suíte é **ignorada** (exit 0).
 
@@ -381,7 +369,13 @@ yarn test
 ## Estrutura do repositório
 
 ```
-src/modules/     # Domínio (auth, brands, models, vehicles, users, …)
+src/modules/
+  auth/          # JWT, login, guards
+  brands/        # CRUD de marcas
+  models/        # CRUD de modelos
+  vehicles/      # CRUD de veículos, cache Redis, publisher RabbitMQ
+  users/         # CRUD de usuários
+  audit/         # Interceptor HTTP, fila RabbitMQ, persistência MongoDB
 src/database/    # Migrations, seeds, mock JSON
 src/common/      # Filtros, validators, DTOs compartilhados
 src/config/      # env, database, cache, swagger
