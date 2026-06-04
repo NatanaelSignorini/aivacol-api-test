@@ -54,6 +54,7 @@ export class BrandsController {
   @ApiOperation({ summary: 'Create brand' })
   @ApiResponse({ status: 201, type: BrandResponseDto })
   @ApiCreateErrorResponses({ resource: 'brands' })
+  /** POST /brands — exige JWT; cria marca e retorna `{ data: { brand } }`. */
   create(
     @Body() input: CreateBrandInput,
     @CurrentUser() user: AuthenticatedUser,
@@ -67,6 +68,7 @@ export class BrandsController {
   @ApiOperation({ summary: 'List brands with filters' })
   @ApiResponse({ status: 200, description: 'Paginated brands connection' })
   @ApiListErrorResponses({ resource: 'brands' })
+  /** GET /brands — lista paginada com filtros; retorna `{ data: { brands: connection } }`. */
   findAll(@Query() query: BrandsListQueryDto) {
     return this.brandsService
       .findAll(query)
@@ -78,6 +80,7 @@ export class BrandsController {
   @ApiParam({ name: 'id', format: 'uuid', example: UUID_V7_EXAMPLE })
   @ApiResponse({ status: 200, type: BrandResponseDto })
   @ApiFindOneErrorResponses({ resource: 'brands' })
+  /** GET /brands/:id — busca por UUID; retorna `{ data: { brand } }`. */
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<ApiDataResponse<'brand', BrandResponseDto>> {
@@ -91,6 +94,7 @@ export class BrandsController {
   @ApiParam({ name: 'id', format: 'uuid', example: UUID_V7_EXAMPLE })
   @ApiResponse({ status: 200, type: BrandResponseDto })
   @ApiUpdateErrorResponses({ resource: 'brands' })
+  /** PATCH /brands/:id — atualização parcial; retorna `{ data: { brand } }`. */
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() input: UpdateBrandInput,
@@ -107,6 +111,7 @@ export class BrandsController {
   @ApiParam({ name: 'id', format: 'uuid', example: UUID_V7_EXAMPLE })
   @ApiNoContentResponse({ description: 'Brand removed' })
   @ApiDeleteErrorResponses({ resource: 'brands', protected: true })
+  /** DELETE /brands/:id — admin; bloqueado se houver models (409); retorna 204. */
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.brandsService.remove(id);
   }

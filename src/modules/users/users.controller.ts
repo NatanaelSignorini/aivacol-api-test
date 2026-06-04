@@ -55,6 +55,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Create user (admin only)' })
   @ApiResponse({ status: 201, type: UserResponseDto })
   @ApiCreateErrorResponses({ resource: 'users', protected: true })
+  /** POST /users — admin; cria usuário e retorna `{ data: { user } }`. */
   create(
     @Body() input: CreateUserInput,
     @CurrentUser() user: AuthenticatedUser,
@@ -68,6 +69,7 @@ export class UsersController {
   @ApiOperation({ summary: 'List users with filters (admin only)' })
   @ApiResponse({ status: 200, description: 'Paginated users connection' })
   @ApiListErrorResponses({ resource: 'users', protected: true })
+  /** GET /users — admin; lista paginada com filtros; retorna `{ data: { users: connection } }`. */
   findAll(@Query() query: UsersListQueryDto) {
     return this.usersService
       .findAll(query)
@@ -79,6 +81,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Get current authenticated user profile' })
   @ApiResponse({ status: 200, type: UserResponseDto })
   @ApiFindOneErrorResponses({ resource: 'users', protected: true })
+  /** GET /users/me — qualquer usuário autenticado; retorna perfil em `{ data: { user } }`. */
   me(
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ApiDataResponse<'user', UserResponseDto>> {
@@ -92,6 +95,7 @@ export class UsersController {
   @ApiParam({ name: 'id', format: 'uuid', example: UUID_V7_EXAMPLE })
   @ApiResponse({ status: 200, type: UserResponseDto })
   @ApiFindOneErrorResponses({ resource: 'users', protected: true })
+  /** GET /users/:id — admin; busca por UUID; retorna `{ data: { user } }`. */
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<ApiDataResponse<'user', UserResponseDto>> {
@@ -105,6 +109,7 @@ export class UsersController {
   @ApiParam({ name: 'id', format: 'uuid', example: UUID_V7_EXAMPLE })
   @ApiResponse({ status: 200, type: UserResponseDto })
   @ApiUpdateErrorResponses({ resource: 'users', protected: true })
+  /** PATCH /users/:id — admin; atualização parcial; retorna `{ data: { user } }`. */
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() input: UpdateUserInput,
@@ -120,6 +125,7 @@ export class UsersController {
   @ApiParam({ name: 'id', format: 'uuid', example: UUID_V7_EXAMPLE })
   @ApiNoContentResponse({ description: 'User removed' })
   @ApiDeleteErrorResponses({ resource: 'users', protected: true })
+  /** DELETE /users/:id — admin; impede auto-exclusão (400); retorna 204. */
   remove(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: AuthenticatedUser,

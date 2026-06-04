@@ -40,6 +40,7 @@ export class AuthController {
     description: 'Invalid credentials',
     schema: errorResponseSchema(ERROR_RESPONSE_EXAMPLES.loginUnauthorized),
   })
+  /** POST /auth/login — rota pública com rate limit; delega autenticação e envelopa tokens em `{ data: { login } }`. */
   login(
     @Body() input: LoginInput,
   ): Promise<ApiDataResponse<'login', LoginResponseDto>> {
@@ -61,6 +62,7 @@ export class AuthController {
     description: 'Missing or invalid JWT',
     schema: errorResponseSchema(ERROR_RESPONSE_EXAMPLES.logoutUnauthorized),
   })
+  /** POST /auth/logout — exige JWT; confirma logout e retorna mensagem em `{ data: { logout } }`. */
   logout(): ApiDataResponse<'logout', LogoutResponseDto> {
     return buildItemDataResponse('logout', this.authService.logout());
   }

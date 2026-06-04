@@ -55,6 +55,7 @@ export class ModelsController {
   @ApiOperation({ summary: 'Create model' })
   @ApiResponse({ status: 201, type: ModelResponseDto })
   @ApiCreateErrorResponses({ resource: 'models' })
+  /** POST /models — exige JWT e brandId; suporta includes via query; retorna `{ data: { model } }`. */
   create(
     @Body() input: CreateModelInput,
     @Query() includeQuery: ModelsIncludeQueryDto,
@@ -69,6 +70,7 @@ export class ModelsController {
   @ApiOperation({ summary: 'List models with filters' })
   @ApiResponse({ status: 200, description: 'Paginated models connection' })
   @ApiListErrorResponses({ resource: 'models' })
+  /** GET /models — lista paginada com filtros e includes; retorna `{ data: { models: connection } }`. */
   findAll(@Query() query: ModelsListQueryDto) {
     return this.modelsService
       .findAll(query)
@@ -80,6 +82,7 @@ export class ModelsController {
   @ApiParam({ name: 'id', format: 'uuid', example: UUID_V7_EXAMPLE })
   @ApiResponse({ status: 200, type: ModelResponseDto })
   @ApiFindOneErrorResponses({ resource: 'models' })
+  /** GET /models/:id — busca por UUID com includes opcionais; retorna `{ data: { model } }`. */
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
     @Query() includeQuery: ModelsIncludeQueryDto,
@@ -94,6 +97,7 @@ export class ModelsController {
   @ApiParam({ name: 'id', format: 'uuid', example: UUID_V7_EXAMPLE })
   @ApiResponse({ status: 200, type: ModelResponseDto })
   @ApiUpdateErrorResponses({ resource: 'models' })
+  /** PATCH /models/:id — atualização parcial; retorna `{ data: { model } }`. */
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() input: UpdateModelInput,
@@ -111,6 +115,7 @@ export class ModelsController {
   @ApiParam({ name: 'id', format: 'uuid', example: UUID_V7_EXAMPLE })
   @ApiNoContentResponse({ description: 'Model removed' })
   @ApiDeleteErrorResponses({ resource: 'models', protected: true })
+  /** DELETE /models/:id — admin; bloqueado se houver veículos (409); retorna 204. */
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.modelsService.remove(id);
   }

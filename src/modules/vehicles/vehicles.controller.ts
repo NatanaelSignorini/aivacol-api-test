@@ -55,6 +55,7 @@ export class VehiclesController {
   @ApiOperation({ summary: 'Register vehicle' })
   @ApiResponse({ status: 201, type: VehicleResponseDto })
   @ApiCreateErrorResponses({ resource: 'vehicles' })
+  /** POST /vehicles — exige JWT; registra veículo e retorna `{ data: { vehicle } }`. */
   create(
     @Body() input: CreateVehicleInput,
     @Query() includeQuery: VehiclesIncludeQueryDto,
@@ -69,6 +70,7 @@ export class VehiclesController {
   @ApiOperation({ summary: 'List vehicles with filters' })
   @ApiResponse({ status: 200, description: 'Paginated vehicles connection' })
   @ApiListErrorResponses({ resource: 'vehicles' })
+  /** GET /vehicles — lista paginada com filtros; usa cache Redis na consulta padrão. */
   findAll(@Query() query: VehiclesListQueryDto) {
     return this.vehiclesService
       .findAll(query)
@@ -80,6 +82,7 @@ export class VehiclesController {
   @ApiParam({ name: 'id', format: 'uuid', example: UUID_V7_EXAMPLE })
   @ApiResponse({ status: 200, type: VehicleResponseDto })
   @ApiFindOneErrorResponses({ resource: 'vehicles' })
+  /** GET /vehicles/:id — busca por UUID com includes opcionais; retorna `{ data: { vehicle } }`. */
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
     @Query() includeQuery: VehiclesIncludeQueryDto,
@@ -94,6 +97,7 @@ export class VehiclesController {
   @ApiParam({ name: 'id', format: 'uuid', example: UUID_V7_EXAMPLE })
   @ApiResponse({ status: 200, type: VehicleResponseDto })
   @ApiUpdateErrorResponses({ resource: 'vehicles' })
+  /** PATCH /vehicles/:id — atualização parcial; invalida cache e publica evento. */
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() input: UpdateVehicleInput,
@@ -111,6 +115,7 @@ export class VehiclesController {
   @ApiParam({ name: 'id', format: 'uuid', example: UUID_V7_EXAMPLE })
   @ApiNoContentResponse({ description: 'Vehicle removed' })
   @ApiDeleteErrorResponses({ resource: 'vehicles', protected: true })
+  /** DELETE /vehicles/:id — admin; remove veículo, invalida cache e publica evento; retorna 204. */
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.vehiclesService.remove(id);
   }
