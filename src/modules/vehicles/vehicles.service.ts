@@ -14,6 +14,7 @@ import {
   normalizeLicensePlate,
   normalizeRenavam,
 } from '../../common/validators/vehicle-identifiers.validator';
+import { VehicleEventsPublisher } from '../messaging/publishers/vehicle-events.publisher';
 import { Model } from '../models/entities/model.entity';
 import type { CreateVehicleInput } from './dto/create-vehicle.input';
 import type { UpdateVehicleInput } from './dto/update-vehicle.input';
@@ -34,6 +35,7 @@ export class VehiclesService {
     @InjectRepository(Model)
     private readonly modelsRepository: Repository<Model>,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    private readonly vehicleEventsPublisher: VehicleEventsPublisher,
   ) {}
 
   async create(
@@ -63,7 +65,12 @@ export class VehiclesService {
     const saved = await this.vehiclesRepository.save(vehicle);
     await this.invalidateVehicleCache();
 
-    return this.toResponse(await this.findEntityWithModelOrFail(saved.id));
+    const response = this.toResponse(
+      await this.findEntityWithModelOrFail(saved.id),
+    );
+    await this.vehicleEventsPublisher.publishCreated(response);
+
+    return response;
   }
 
   async findAll(): Promise<VehicleResponseDto[]> {
@@ -152,27 +159,22 @@ export class VehiclesService {
     await this.vehiclesRepository.save(vehicle);
     await this.invalidateVehicleCache(id);
 
-    return this.toResponse(await this.findEntityWithModelOrFail(id));
+    const response = this.toResponse(await this.findEntityWithModelOrFail(id));
+    await this.vehicleEventsPublisher.publishUpdated(response);
+
+    return response;
   }
 
   async remove(id: EntityId): Promise<void> {
-    const vehicle = await this.findEntityOrFail(id);
+    const vehicle = await this.findEntityWithModelOrFail(id);
+    const snapshot = this.toResponse(vehicle);
     await this.vehiclesRepository.remove(vehicle);
     await this.invalidateVehicleCache(id);
+    await this.vehicleEventsPublisher.publishDeleted(snapshot);
   }
 
   async countByModelId(modelId: EntityId): Promise<number> {
     return this.vehiclesRepository.count({ where: { modelId } });
-  }
-
-  private async findEntityOrFail(id: EntityId): Promise<Vehicle> {
-    const vehicle = await this.vehiclesRepository.findOne({ where: { id } });
-
-    if (!vehicle) {
-      throw new NotFoundException(`Vehicle with id "${id}" not found`);
-    }
-
-    return vehicle;
   }
 
   private async findEntityWithModelOrFail(id: EntityId): Promise<Vehicle> {

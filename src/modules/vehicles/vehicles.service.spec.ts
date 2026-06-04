@@ -4,6 +4,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import type { Cache } from 'cache-manager';
 import type { Repository } from 'typeorm';
+import { VehicleEventsPublisher } from '../messaging/publishers/vehicle-events.publisher';
 import { Model } from '../models/entities/model.entity';
 import { Vehicle } from './entities/vehicle.entity';
 import { VehiclesService } from './vehicles.service';
@@ -22,6 +23,12 @@ describe('VehiclesService', () => {
   >;
   let modelsRepository: jest.Mocked<Pick<Repository<Model>, 'findOne'>>;
   let cacheManager: jest.Mocked<Pick<Cache, 'get' | 'set' | 'del'>>;
+  let vehicleEventsPublisher: jest.Mocked<
+    Pick<
+      VehicleEventsPublisher,
+      'publishCreated' | 'publishUpdated' | 'publishDeleted'
+    >
+  >;
 
   const userId = '018f1234-5678-7890-abcd-ef1234567890';
   const modelId = '018f1234-5678-7890-abcd-ef1234567891';
@@ -87,6 +94,12 @@ describe('VehiclesService', () => {
       del: jest.fn(),
     };
 
+    vehicleEventsPublisher = {
+      publishCreated: jest.fn().mockResolvedValue(undefined),
+      publishUpdated: jest.fn().mockResolvedValue(undefined),
+      publishDeleted: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         VehiclesService,
@@ -101,6 +114,10 @@ describe('VehiclesService', () => {
         {
           provide: CACHE_MANAGER,
           useValue: cacheManager,
+        },
+        {
+          provide: VehicleEventsPublisher,
+          useValue: vehicleEventsPublisher,
         },
       ],
     }).compile();
@@ -156,6 +173,9 @@ describe('VehiclesService', () => {
         createdBy: userId,
       });
       expect(cacheManager.del).toHaveBeenCalledWith(VEHICLES_LIST_CACHE_KEY);
+      expect(vehicleEventsPublisher.publishCreated).toHaveBeenCalledWith(
+        expect.objectContaining({ id: vehicleId }),
+      );
     });
 
     it('rejects non-existent modelId with NotFoundException', async () => {
@@ -276,6 +296,9 @@ describe('VehiclesService', () => {
       expect(cacheManager.del).toHaveBeenCalledWith(
         vehicleByIdCacheKey(vehicleId),
       );
+      expect(vehicleEventsPublisher.publishUpdated).toHaveBeenCalledWith(
+        expect.objectContaining({ id: vehicleId, year: 2025 }),
+      );
     });
 
     it('rejects duplicate chassis on update', async () => {
@@ -306,6 +329,9 @@ describe('VehiclesService', () => {
       expect(cacheManager.del).toHaveBeenCalledWith(VEHICLES_LIST_CACHE_KEY);
       expect(cacheManager.del).toHaveBeenCalledWith(
         vehicleByIdCacheKey(vehicleId),
+      );
+      expect(vehicleEventsPublisher.publishDeleted).toHaveBeenCalledWith(
+        expect.objectContaining({ id: vehicleId }),
       );
     });
   });
