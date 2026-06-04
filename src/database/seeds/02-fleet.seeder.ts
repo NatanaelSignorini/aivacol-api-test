@@ -15,7 +15,7 @@ import { User } from '../../modules/users/entities/user.entity';
 import { Vehicle } from '../../modules/vehicles/entities/vehicle.entity';
 
 const AIVACOL_EMAIL = 'admin@aivacol.com';
-const FLEET_MOCK_PATH = join(__dirname, '../seed-data/mock/fleet.seed.json');
+const FLEET_SEED_PATH = join(__dirname, '../seed-data/fleet.seed.json');
 
 interface FleetMockFile {
   version: number;
@@ -36,7 +36,7 @@ export default class FleetSeeder implements Seeder {
     _factoryManager: SeederFactoryManager,
   ): Promise<void> {
     const mock = JSON.parse(
-      readFileSync(FLEET_MOCK_PATH, 'utf8'),
+      readFileSync(FLEET_SEED_PATH, 'utf8'),
     ) as FleetMockFile;
 
     if (mock.version !== 1) {
