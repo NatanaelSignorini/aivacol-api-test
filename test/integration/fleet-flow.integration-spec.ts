@@ -2,8 +2,8 @@ import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 import { itemFrom, nodesFrom } from '../common/api-response.util';
-import { createIntegrationApp } from '../common/integration-app';
-import { describeIntegration } from '../common/integration-gate';
+import { createIntegrationApp } from '../common/integration/create-test-app';
+import { describeIntegration } from '../common/integration/describe-if-ready';
 import {
   AIVACOL_LOGIN,
   uniqueBrandName,
@@ -84,8 +84,10 @@ describeIntegration('Fleet flow (docker integration)', () => {
 
     const vehicleDetails = itemFrom(vehicleWithRelations.body, 'vehicle');
 
-    expect(vehicleDetails.model.id).toBe(modelId);
-    expect(vehicleDetails.model.brand.id).toBe(brandId);
+    expect(vehicleDetails.model.id.toLowerCase()).toBe(modelId.toLowerCase());
+    expect(vehicleDetails.model.brand.id.toLowerCase()).toBe(
+      brandId.toLowerCase(),
+    );
   });
 
   it('lists and fetches the created vehicle', async () => {

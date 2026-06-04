@@ -8,10 +8,11 @@ import {
   vehicleByIdCacheKey,
 } from '../../src/modules/vehicles/vehicles-cache.constants';
 import { itemFrom } from '../common/api-response.util';
-import { createIntegrationApp } from '../common/integration-app';
-import { describeIntegration } from '../common/integration-gate';
+import { createIntegrationApp } from '../common/integration/create-test-app';
+import { describeIntegration } from '../common/integration/describe-if-ready';
 import {
   AIVACOL_LOGIN,
+  uniqueBrandName,
   uniqueModelName,
   uniqueRunId,
   uniqueVehicleIdentifiers,
@@ -23,7 +24,6 @@ describeIntegration('Vehicles cache (docker integration)', () => {
   let modelId = '';
   let vehicleId = '';
   const runId = uniqueRunId();
-  const vehicleIds = uniqueVehicleIdentifiers(runId);
 
   beforeAll(async () => {
     app = await createIntegrationApp();
@@ -33,7 +33,7 @@ describeIntegration('Vehicles cache (docker integration)', () => {
     await app.close();
   });
 
-  it('warms list cache on GET and invalidates on PATCH', async () => {
+  beforeAll(async () => {
     const loginResponse = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send(AIVACOL_LOGIN)
@@ -41,19 +41,43 @@ describeIntegration('Vehicles cache (docker integration)', () => {
 
     adminToken = itemFrom(loginResponse.body, 'login').accessToken;
 
+    const brandResponse = await request(app.getHttpServer())
+      .post('/api/v1/brands')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ name: uniqueBrandName(runId) })
+      .expect(201);
+
+    const brandId = itemFrom(brandResponse.body, 'brand').id;
+
     const modelResponse = await request(app.getHttpServer())
       .post('/api/v1/models')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ name: uniqueModelName(runId) })
+      .send({ name: uniqueModelName(runId), brandId })
       .expect(201);
 
     modelId = itemFrom(modelResponse.body, 'model').id;
+  });
 
+  afterAll(async () => {
+    if (vehicleId) {
+      await request(app.getHttpServer())
+        .delete(`/api/v1/vehicles/${vehicleId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+    }
+
+    if (modelId) {
+      await request(app.getHttpServer())
+        .delete(`/api/v1/models/${modelId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+    }
+  });
+
+  it('warms list and id cache on GET', async () => {
     const createResponse = await request(app.getHttpServer())
       .post('/api/v1/vehicles')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
-        ...vehicleIds,
+        ...uniqueVehicleIdentifiers(uniqueRunId()),
         year: 2024,
         modelId,
       })
@@ -70,16 +94,60 @@ describeIntegration('Vehicles cache (docker integration)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
 
-    const listCached = await cacheManager.get(VEHICLES_LIST_CACHE_KEY);
-    expect(listCached).toBeDefined();
+    expect(await cacheManager.get(VEHICLES_LIST_CACHE_KEY)).toBeDefined();
 
     await request(app.getHttpServer())
       .get(`/api/v1/vehicles/${vehicleId}`)
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
 
-    const idCached = await cacheManager.get(vehicleByIdCacheKey(vehicleId));
-    expect(idCached).toBeDefined();
+    expect(
+      await cacheManager.get(vehicleByIdCacheKey(vehicleId)),
+    ).toBeDefined();
+  });
+
+  it('invalidates list cache on POST create', async () => {
+    const cacheManager = app.get<Cache>(CACHE_MANAGER);
+
+    await request(app.getHttpServer())
+      .get('/api/v1/vehicles')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+
+    expect(await cacheManager.get(VEHICLES_LIST_CACHE_KEY)).toBeDefined();
+
+    await request(app.getHttpServer())
+      .post('/api/v1/vehicles')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        ...uniqueVehicleIdentifiers(uniqueRunId()),
+        year: 2024,
+        modelId,
+      })
+      .expect(201);
+
+    expect(await cacheManager.get(VEHICLES_LIST_CACHE_KEY)).toBeUndefined();
+  });
+
+  it('invalidates list cache on PATCH and id cache on DELETE', async () => {
+    const cacheManager = app.get<Cache>(CACHE_MANAGER);
+    await cacheManager.del(VEHICLES_LIST_CACHE_KEY);
+    await cacheManager.del(vehicleByIdCacheKey(vehicleId));
+
+    await request(app.getHttpServer())
+      .get('/api/v1/vehicles')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .get(`/api/v1/vehicles/${vehicleId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+
+    expect(await cacheManager.get(VEHICLES_LIST_CACHE_KEY)).toBeDefined();
+    expect(
+      await cacheManager.get(vehicleByIdCacheKey(vehicleId)),
+    ).toBeDefined();
 
     await request(app.getHttpServer())
       .patch(`/api/v1/vehicles/${vehicleId}`)
@@ -87,19 +155,25 @@ describeIntegration('Vehicles cache (docker integration)', () => {
       .send({ year: 2025 })
       .expect(200);
 
-    const listCachedAfterPatch = await cacheManager.get(
-      VEHICLES_LIST_CACHE_KEY,
-    );
-    expect(listCachedAfterPatch).toBeUndefined();
+    expect(await cacheManager.get(VEHICLES_LIST_CACHE_KEY)).toBeUndefined();
+
+    await request(app.getHttpServer())
+      .get(`/api/v1/vehicles/${vehicleId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+
+    expect(
+      await cacheManager.get(vehicleByIdCacheKey(vehicleId)),
+    ).toBeDefined();
 
     await request(app.getHttpServer())
       .delete(`/api/v1/vehicles/${vehicleId}`)
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(204);
 
-    await request(app.getHttpServer())
-      .delete(`/api/v1/models/${modelId}`)
-      .set('Authorization', `Bearer ${adminToken}`)
-      .expect(204);
+    expect(
+      await cacheManager.get(vehicleByIdCacheKey(vehicleId)),
+    ).toBeUndefined();
+    vehicleId = '';
   });
 });
