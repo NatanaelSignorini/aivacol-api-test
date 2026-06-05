@@ -1,3 +1,4 @@
+import { toUuidV7 } from '../../common/types/entity-id.type';
 import {
   BadRequestException,
   ConflictException,
@@ -28,8 +29,8 @@ describe('UsersService', () => {
     >
   >;
 
-  const adminId = '018f1234-5678-7890-abcd-ef1234567890';
-  const userId = '018f1234-5678-7890-abcd-ef1234567891';
+  const adminId = toUuidV7('018f1234-5678-7890-abcd-ef1234567890');
+  const userId = toUuidV7('018f1234-5678-7890-abcd-ef1234567891');
 
   const existingUser: User = {
     id: userId,
@@ -265,7 +266,7 @@ describe('UsersService', () => {
     it('rejects duplicate email on update', async () => {
       const otherUser: User = {
         ...existingUser,
-        id: '018f1234-5678-7890-abcd-ef1234567892',
+        id: toUuidV7('018f1234-5678-7890-abcd-ef1234567892'),
         email: 'taken@aivacol.com',
       };
 
@@ -299,7 +300,7 @@ describe('UsersService', () => {
     it('rejects duplicate nickname on update', async () => {
       const otherUser: User = {
         ...existingUser,
-        id: '018f1234-5678-7890-abcd-ef1234567892',
+        id: toUuidV7('018f1234-5678-7890-abcd-ef1234567892'),
         nickname: 'taken',
       };
 

@@ -1,3 +1,4 @@
+import { toUuidV7 } from '../../../common/types/entity-id.type';
 import {
   type ExecutionContext,
   ForbiddenException,
@@ -15,13 +16,13 @@ describe('RolesGuard', () => {
   let reflector: jest.Mocked<Pick<Reflector, 'getAllAndOverride'>>;
 
   const adminUser: AuthenticatedUser = {
-    id: '018f1234-5678-7890-abcd-ef1234567890',
+    id: toUuidV7('018f1234-5678-7890-abcd-ef1234567890'),
     email: 'admin@aivacol.com',
     role: UserRole.Admin,
   };
 
   const operatorUser: AuthenticatedUser = {
-    id: '018f1234-5678-7890-abcd-ef1234567891',
+    id: toUuidV7('018f1234-5678-7890-abcd-ef1234567891'),
     email: 'operator@aivacol.com',
     role: UserRole.Operator,
   };

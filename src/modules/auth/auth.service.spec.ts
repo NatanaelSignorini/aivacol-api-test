@@ -1,3 +1,4 @@
+import { toUuidV7 } from '../../common/types/entity-id.type';
 import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -19,7 +20,7 @@ describe('AuthService', () => {
   let jwtService: jest.Mocked<Pick<JwtService, 'signAsync'>>;
 
   const mockUser = {
-    id: '018f1234-5678-7890-abcd-ef1234567890',
+    id: toUuidV7('018f1234-5678-7890-abcd-ef1234567890'),
     nickname: 'aivacol',
     name: 'Aivacol Admin',
     email: 'admin@aivacol.com',
@@ -27,7 +28,7 @@ describe('AuthService', () => {
     role: UserRole.Admin,
     createdAt: new Date(),
     updatedAt: new Date(),
-    createdBy: '018f1234-5678-7890-abcd-ef1234567890',
+    createdBy: toUuidV7('018f1234-5678-7890-abcd-ef1234567890'),
   };
 
   beforeEach(async () => {

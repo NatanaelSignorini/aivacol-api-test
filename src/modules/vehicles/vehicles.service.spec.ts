@@ -1,3 +1,4 @@
+import { toUuidV7 } from '../../common/types/entity-id.type';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
@@ -38,10 +39,10 @@ describe('VehiclesService', () => {
     >
   >;
 
-  const userId = '018f1234-5678-7890-abcd-ef1234567890';
-  const brandId = '018f1234-5678-7890-abcd-ef1234567893';
-  const modelId = '018f1234-5678-7890-abcd-ef1234567891';
-  const vehicleId = '018f1234-5678-7890-abcd-ef1234567892';
+  const userId = toUuidV7('018f1234-5678-7890-abcd-ef1234567890');
+  const brandId = toUuidV7('018f1234-5678-7890-abcd-ef1234567893');
+  const modelId = toUuidV7('018f1234-5678-7890-abcd-ef1234567891');
+  const vehicleId = toUuidV7('018f1234-5678-7890-abcd-ef1234567892');
 
   const existingBrand: Brand = {
     id: brandId,
@@ -507,7 +508,7 @@ describe('VehiclesService', () => {
     it('rejects duplicate chassis on update', async () => {
       const otherVehicle: Vehicle = {
         ...existingVehicle,
-        id: '018f1234-5678-7890-abcd-ef9999999999',
+        id: toUuidV7('018f1234-5678-7890-abcd-ef9999999999'),
         chassis: '9BWZZZ377VT004999',
       };
 
@@ -521,7 +522,7 @@ describe('VehiclesService', () => {
     });
 
     it('updates modelId after validating model exists', async () => {
-      const newModelId = '018f1234-5678-7890-abcd-ef8888888888';
+      const newModelId = toUuidV7('018f1234-5678-7890-abcd-ef8888888888');
       modelsRepository.findOne.mockResolvedValue({
         ...existingModel,
         id: newModelId,
@@ -579,7 +580,7 @@ describe('VehiclesService', () => {
 
       await expect(
         service.update(vehicleId, {
-          modelId: '018f1234-5678-7890-abcd-ef7777777777',
+          modelId: toUuidV7('018f1234-5678-7890-abcd-ef7777777777'),
         }),
       ).rejects.toThrow(NotFoundException);
     });

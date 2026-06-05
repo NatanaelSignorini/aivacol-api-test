@@ -1,3 +1,4 @@
+import { toUuidV7 } from '../../../common/types/entity-id.type';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
@@ -8,18 +9,18 @@ import { VehicleEventsPublisher } from './vehicle-events.publisher';
 
 jest.mock('amqplib');
 
-const vehicleSnapshot: VehicleResponseDto = {
-  id: '018f1234-5678-7890-abcd-ef1234567892',
+const vehicleSnapshot = {
+  id: toUuidV7('018f1234-5678-7890-abcd-ef1234567892'),
   licensePlate: 'ABC1D23',
   chassis: '9BWZZZ377VT004251',
   renavam: '12345678901',
   year: 2024,
   model: {
-    id: '018f1234-5678-7890-abcd-ef1234567891',
+    id: toUuidV7('018f1234-5678-7890-abcd-ef1234567891'),
     name: 'Corolla',
     brand: null,
   },
-};
+} as VehicleResponseDto;
 
 describe('VehicleEventsPublisher', () => {
   let publisher: VehicleEventsPublisher;

@@ -6,6 +6,7 @@ import type {
   AuthenticatedUser,
   JwtPayload,
 } from './interfaces/jwt-payload.interface';
+import { toUuidV7 } from '../../common/types/entity-id.type';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -32,7 +33,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     return {
-      id: payload.sub,
+      id: toUuidV7(payload.sub),
       email: payload.email,
       role: payload.role,
     };

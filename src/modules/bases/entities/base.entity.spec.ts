@@ -1,5 +1,5 @@
 import { validate as validateUuid } from 'uuid';
-import { isUuidV7 } from '../../../common/types/entity-id.type';
+import { isUuidV7, toUuidV7 } from '../../../common/types/entity-id.type';
 import { BaseEntity } from './base.entity';
 
 class TestEntity extends BaseEntity {}
@@ -18,7 +18,7 @@ describe('BaseEntity', () => {
 
     it('preserves a pre-assigned id', () => {
       const entity = new TestEntity();
-      const existingId = '018f1234-5678-7890-abcd-ef1234567890';
+      const existingId = toUuidV7('018f1234-5678-7890-abcd-ef1234567890');
       entity.id = existingId;
 
       entity.assignId();

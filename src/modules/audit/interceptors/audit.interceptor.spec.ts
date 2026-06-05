@@ -1,3 +1,4 @@
+import { toUuidV7 } from '../../../common/types/entity-id.type';
 import type { CallHandler, ExecutionContext } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
@@ -70,7 +71,7 @@ describe('AuditInterceptor', () => {
       path: '/api/v1/models',
       statusCode: 201,
       user: {
-        id: '018f1234-5678-7890-abcd-ef1234567890',
+        id: toUuidV7('018f1234-5678-7890-abcd-ef1234567890'),
         email: 'admin@aivacol.com',
         role: UserRole.Admin,
       },
@@ -83,7 +84,7 @@ describe('AuditInterceptor', () => {
             method: 'POST',
             path: '/api/v1/models',
             statusCode: 201,
-            userId: '018f1234-5678-7890-abcd-ef1234567890',
+            userId: toUuidV7('018f1234-5678-7890-abcd-ef1234567890'),
             userEmail: 'admin@aivacol.com',
             userRole: UserRole.Admin,
             durationMs: expect.any(Number),

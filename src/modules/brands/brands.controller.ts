@@ -6,7 +6,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -21,6 +20,8 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { ParseUuidV7Pipe } from '../../common/pipes/parse-uuid-v7.pipe';
+import type { EntityId } from '../../common/types/entity-id.type';
 import type { ApiDataResponse } from '../../common/interfaces/connection.interface';
 import {
   ApiCreateErrorResponses,
@@ -82,7 +83,7 @@ export class BrandsController {
   @ApiFindOneErrorResponses({ resource: 'brands' })
   /** GET /brands/:id — busca por UUID; retorna `{ data: { brand } }`. */
   findOne(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id', ParseUuidV7Pipe) id: EntityId,
   ): Promise<ApiDataResponse<'brand', BrandResponseDto>> {
     return this.brandsService
       .findOne(id)
@@ -96,7 +97,7 @@ export class BrandsController {
   @ApiUpdateErrorResponses({ resource: 'brands' })
   /** PATCH /brands/:id — atualização parcial; retorna `{ data: { brand } }`. */
   update(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id', ParseUuidV7Pipe) id: EntityId,
     @Body() input: UpdateBrandInput,
   ): Promise<ApiDataResponse<'brand', BrandResponseDto>> {
     return this.brandsService
@@ -112,7 +113,7 @@ export class BrandsController {
   @ApiNoContentResponse({ description: 'Brand removed' })
   @ApiDeleteErrorResponses({ resource: 'brands', protected: true })
   /** DELETE /brands/:id — admin; bloqueado se houver models (409); retorna 204. */
-  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+  remove(@Param('id', ParseUuidV7Pipe) id: EntityId): Promise<void> {
     return this.brandsService.remove(id);
   }
 }

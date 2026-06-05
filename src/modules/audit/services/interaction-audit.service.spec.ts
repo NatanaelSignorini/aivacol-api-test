@@ -1,3 +1,4 @@
+import { toUuidV7 } from '../../../common/types/entity-id.type';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
@@ -68,7 +69,7 @@ describe('InteractionAuditService', () => {
     path: '/api/v1/vehicles',
     statusCode: 201,
     durationMs: 45,
-    userId: '018f1234-5678-7890-abcd-ef1234567890',
+    userId: toUuidV7('018f1234-5678-7890-abcd-ef1234567890'),
     userEmail: 'admin@aivacol.com',
     userRole: UserRole.Admin,
   };

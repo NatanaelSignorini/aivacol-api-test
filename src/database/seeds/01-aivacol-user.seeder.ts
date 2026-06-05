@@ -1,7 +1,7 @@
 import type { DataSource } from 'typeorm';
 import type { Seeder, SeederFactoryManager } from 'typeorm-extension';
-import { v7 as uuidv7 } from 'uuid';
 import { passwordEncoder } from '../../common/decorators/password-encoder';
+import { createUuidV7 } from '../../common/types/entity-id.type';
 import { User } from '../../modules/users/entities/user.entity';
 import { UserRole } from '../../modules/users/enums/user-role.enum';
 
@@ -27,7 +27,7 @@ export default class AivacolUserSeeder implements Seeder {
       return;
     }
 
-    const id = uuidv7();
+    const id = createUuidV7();
     const user = repository.create({
       id,
       nickname: 'aivacol',

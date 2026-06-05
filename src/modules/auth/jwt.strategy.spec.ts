@@ -1,3 +1,4 @@
+import { toUuidV7 } from '../../common/types/entity-id.type';
 import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
@@ -30,13 +31,13 @@ describe('JwtStrategy', () => {
   describe('validate', () => {
     it('maps payload to AuthenticatedUser with role', () => {
       const result = strategy.validate({
-        sub: '018f1234-5678-7890-abcd-ef1234567890',
+        sub: toUuidV7('018f1234-5678-7890-abcd-ef1234567890'),
         email: 'admin@aivacol.com',
         role: UserRole.Admin,
       });
 
       expect(result).toEqual({
-        id: '018f1234-5678-7890-abcd-ef1234567890',
+        id: toUuidV7('018f1234-5678-7890-abcd-ef1234567890'),
         email: 'admin@aivacol.com',
         role: UserRole.Admin,
       });
@@ -45,7 +46,7 @@ describe('JwtStrategy', () => {
     it('rejects incomplete payload', () => {
       expect(() =>
         strategy.validate({
-          sub: '018f1234-5678-7890-abcd-ef1234567890',
+          sub: toUuidV7('018f1234-5678-7890-abcd-ef1234567890'),
           email: 'admin@aivacol.com',
           role: undefined as unknown as UserRole,
         }),

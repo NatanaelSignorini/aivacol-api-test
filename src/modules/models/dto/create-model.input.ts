@@ -1,6 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
 import { UUID_V7_EXAMPLE } from '../../../common/swagger/swagger.constants';
+import type { EntityId } from '../../../common/types/entity-id.type';
+import { IsUuidV7Field } from '../../../common/validators/uuid-v7.validator';
 
 export class CreateModelInput {
   @ApiProperty({ example: 'Corolla' })
@@ -14,7 +16,6 @@ export class CreateModelInput {
     format: 'uuid',
     description: 'Brand that owns this model',
   })
-  @IsUUID()
-  @IsNotEmpty()
-  brandId!: string;
+  @IsUuidV7Field()
+  brandId!: EntityId;
 }

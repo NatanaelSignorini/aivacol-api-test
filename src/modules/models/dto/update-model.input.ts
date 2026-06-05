@@ -3,11 +3,12 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUUID,
   MaxLength,
   ValidateIf,
 } from 'class-validator';
 import { UUID_V7_EXAMPLE } from '../../../common/swagger/swagger.constants';
+import type { EntityId } from '../../../common/types/entity-id.type';
+import { IsUuidV7Field } from '../../../common/validators/uuid-v7.validator';
 
 export class UpdateModelInput {
   @ApiPropertyOptional({ example: 'Corolla XEi' })
@@ -23,7 +24,6 @@ export class UpdateModelInput {
     description: 'Reassign model to another brand',
   })
   @ValidateIf((_, value) => value !== undefined)
-  @IsNotEmpty()
-  @IsUUID()
-  brandId?: string;
+  @IsUuidV7Field()
+  brandId?: EntityId;
 }

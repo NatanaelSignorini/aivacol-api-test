@@ -1,6 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsUUID, Max, Min } from 'class-validator';
+import { IsInt, IsOptional, Max, Min } from 'class-validator';
 import { UUID_V7_EXAMPLE } from '../../../common/swagger/swagger.constants';
+import type { EntityId } from '../../../common/types/entity-id.type';
+import { IsUuidV7Field } from '../../../common/validators/uuid-v7.validator';
 import {
   IsChassis,
   IsLicensePlate,
@@ -38,7 +40,6 @@ export class UpdateVehicleInput {
   year?: number;
 
   @ApiPropertyOptional({ example: UUID_V7_EXAMPLE, format: 'uuid' })
-  @IsOptional()
-  @IsUUID()
-  modelId?: string;
+  @IsUuidV7Field({ optional: true })
+  modelId?: EntityId;
 }

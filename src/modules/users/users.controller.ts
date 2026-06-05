@@ -6,7 +6,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -21,6 +20,8 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { ParseUuidV7Pipe } from '../../common/pipes/parse-uuid-v7.pipe';
+import type { EntityId } from '../../common/types/entity-id.type';
 import type { ApiDataResponse } from '../../common/interfaces/connection.interface';
 import {
   ApiCreateErrorResponses,
@@ -97,7 +98,7 @@ export class UsersController {
   @ApiFindOneErrorResponses({ resource: 'users', protected: true })
   /** GET /users/:id — admin; busca por UUID; retorna `{ data: { user } }`. */
   findOne(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id', ParseUuidV7Pipe) id: EntityId,
   ): Promise<ApiDataResponse<'user', UserResponseDto>> {
     return this.usersService
       .findOne(id)
@@ -111,7 +112,7 @@ export class UsersController {
   @ApiUpdateErrorResponses({ resource: 'users', protected: true })
   /** PATCH /users/:id — admin; atualização parcial; retorna `{ data: { user } }`. */
   update(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id', ParseUuidV7Pipe) id: EntityId,
     @Body() input: UpdateUserInput,
   ): Promise<ApiDataResponse<'user', UserResponseDto>> {
     return this.usersService
@@ -127,7 +128,7 @@ export class UsersController {
   @ApiDeleteErrorResponses({ resource: 'users', protected: true })
   /** DELETE /users/:id — admin; impede auto-exclusão (400); retorna 204. */
   remove(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id', ParseUuidV7Pipe) id: EntityId,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<void> {
     return this.usersService.remove(id, user.id);

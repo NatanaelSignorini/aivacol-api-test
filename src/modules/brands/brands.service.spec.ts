@@ -1,3 +1,4 @@
+import { toUuidV7 } from '../../common/types/entity-id.type';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -17,8 +18,8 @@ describe('BrandsService', () => {
   >;
   let modelsService: jest.Mocked<Pick<ModelsService, 'countByBrandId'>>;
 
-  const userId = '018f1234-5678-7890-abcd-ef1234567890';
-  const brandId = '018f1234-5678-7890-abcd-ef1234567891';
+  const userId = toUuidV7('018f1234-5678-7890-abcd-ef1234567890');
+  const brandId = toUuidV7('018f1234-5678-7890-abcd-ef1234567891');
 
   const existingBrand: Brand = {
     id: brandId,
@@ -152,7 +153,7 @@ describe('BrandsService', () => {
     it('rejects duplicate name on update with ConflictException', async () => {
       const otherBrand: Brand = {
         ...existingBrand,
-        id: '018f1234-5678-7890-abcd-ef1234567892',
+        id: toUuidV7('018f1234-5678-7890-abcd-ef1234567892'),
         name: 'Honda',
       };
 

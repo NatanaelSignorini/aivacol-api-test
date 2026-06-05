@@ -1,3 +1,4 @@
+import { toUuidV7 } from '../../common/types/entity-id.type';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -25,9 +26,9 @@ describe('ModelsService', () => {
   let brandsRepository: jest.Mocked<Pick<Repository<Brand>, 'findOne'>>;
   let vehiclesService: jest.Mocked<Pick<VehiclesService, 'countByModelId'>>;
 
-  const userId = '018f1234-5678-7890-abcd-ef1234567890';
-  const brandId = '018f1234-5678-7890-abcd-ef1234567891';
-  const modelId = '018f1234-5678-7890-abcd-ef1234567892';
+  const userId = toUuidV7('018f1234-5678-7890-abcd-ef1234567890');
+  const brandId = toUuidV7('018f1234-5678-7890-abcd-ef1234567891');
+  const modelId = toUuidV7('018f1234-5678-7890-abcd-ef1234567892');
 
   const existingBrand: Brand = {
     id: brandId,
@@ -259,7 +260,7 @@ describe('ModelsService', () => {
     it('updates model name and brandId', async () => {
       const updatedBrand: Brand = {
         ...existingBrand,
-        id: '018f1234-5678-7890-abcd-ef1234567893',
+        id: toUuidV7('018f1234-5678-7890-abcd-ef1234567893'),
         name: 'Honda',
       };
 
@@ -299,7 +300,7 @@ describe('ModelsService', () => {
 
       await expect(
         service.update(modelId, {
-          brandId: '018f1234-5678-7890-abcd-ef9999999999',
+          brandId: toUuidV7('018f1234-5678-7890-abcd-ef9999999999'),
         }),
       ).rejects.toThrow(NotFoundException);
     });

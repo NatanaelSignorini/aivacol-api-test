@@ -6,7 +6,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -21,6 +20,8 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { ParseUuidV7Pipe } from '../../common/pipes/parse-uuid-v7.pipe';
+import type { EntityId } from '../../common/types/entity-id.type';
 import type { ApiDataResponse } from '../../common/interfaces/connection.interface';
 import {
   ApiCreateErrorResponses,
@@ -84,7 +85,7 @@ export class ModelsController {
   @ApiFindOneErrorResponses({ resource: 'models' })
   /** GET /models/:id — busca por UUID com includes opcionais; retorna `{ data: { model } }`. */
   findOne(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id', ParseUuidV7Pipe) id: EntityId,
     @Query() includeQuery: ModelsIncludeQueryDto,
   ): Promise<ApiDataResponse<'model', ModelResponseDto>> {
     return this.modelsService
@@ -99,7 +100,7 @@ export class ModelsController {
   @ApiUpdateErrorResponses({ resource: 'models' })
   /** PATCH /models/:id — atualização parcial; retorna `{ data: { model } }`. */
   update(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id', ParseUuidV7Pipe) id: EntityId,
     @Body() input: UpdateModelInput,
     @Query() includeQuery: ModelsIncludeQueryDto,
   ): Promise<ApiDataResponse<'model', ModelResponseDto>> {
@@ -116,7 +117,7 @@ export class ModelsController {
   @ApiNoContentResponse({ description: 'Model removed' })
   @ApiDeleteErrorResponses({ resource: 'models', protected: true })
   /** DELETE /models/:id — admin; bloqueado se houver veículos (409); retorna 204. */
-  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+  remove(@Param('id', ParseUuidV7Pipe) id: EntityId): Promise<void> {
     return this.modelsService.remove(id);
   }
 }

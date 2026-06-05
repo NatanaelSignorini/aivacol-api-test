@@ -1,11 +1,11 @@
 import { getMetadataArgsStorage } from 'typeorm';
 import { validate as validateUuid } from 'uuid';
-import { isUuidV7 } from '../../../common/types/entity-id.type';
+import { isUuidV7, toUuidV7 } from '../../../common/types/entity-id.type';
 import { Model } from '../../models/entities/model.entity';
 import { Vehicle } from './vehicle.entity';
 
 describe('Vehicle', () => {
-  const modelId = '018f1234-5678-7890-abcd-ef1234567891';
+  const modelId = toUuidV7('018f1234-5678-7890-abcd-ef1234567891');
 
   describe('assignId', () => {
     it('generates a UUID v7 when id is not set', () => {

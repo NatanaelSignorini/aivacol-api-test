@@ -6,7 +6,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -21,6 +20,8 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { ParseUuidV7Pipe } from '../../common/pipes/parse-uuid-v7.pipe';
+import type { EntityId } from '../../common/types/entity-id.type';
 import type { ApiDataResponse } from '../../common/interfaces/connection.interface';
 import {
   ApiCreateErrorResponses,
@@ -84,7 +85,7 @@ export class VehiclesController {
   @ApiFindOneErrorResponses({ resource: 'vehicles' })
   /** GET /vehicles/:id — busca por UUID com includes opcionais; retorna `{ data: { vehicle } }`. */
   findOne(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id', ParseUuidV7Pipe) id: EntityId,
     @Query() includeQuery: VehiclesIncludeQueryDto,
   ): Promise<ApiDataResponse<'vehicle', VehicleResponseDto>> {
     return this.vehiclesService
@@ -99,7 +100,7 @@ export class VehiclesController {
   @ApiUpdateErrorResponses({ resource: 'vehicles' })
   /** PATCH /vehicles/:id — atualização parcial; invalida cache e publica evento. */
   update(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id', ParseUuidV7Pipe) id: EntityId,
     @Body() input: UpdateVehicleInput,
     @Query() includeQuery: VehiclesIncludeQueryDto,
   ): Promise<ApiDataResponse<'vehicle', VehicleResponseDto>> {
@@ -116,7 +117,7 @@ export class VehiclesController {
   @ApiNoContentResponse({ description: 'Vehicle removed' })
   @ApiDeleteErrorResponses({ resource: 'vehicles', protected: true })
   /** DELETE /vehicles/:id — admin; remove veículo, invalida cache e publica evento; retorna 204. */
-  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+  remove(@Param('id', ParseUuidV7Pipe) id: EntityId): Promise<void> {
     return this.vehiclesService.remove(id);
   }
 }

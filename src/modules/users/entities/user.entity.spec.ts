@@ -1,5 +1,5 @@
 import { validate as validateUuid } from 'uuid';
-import { isUuidV7 } from '../../../common/types/entity-id.type';
+import { isUuidV7, toUuidV7 } from '../../../common/types/entity-id.type';
 import { UserRole } from '../enums/user-role.enum';
 import { User } from './user.entity';
 
@@ -17,7 +17,7 @@ describe('User', () => {
 
     it('preserves a pre-assigned id', () => {
       const user = new User();
-      const existingId = '018f1234-5678-7890-abcd-ef1234567890';
+      const existingId = toUuidV7('018f1234-5678-7890-abcd-ef1234567890');
       user.id = existingId;
 
       user.assignId();

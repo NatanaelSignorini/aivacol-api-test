@@ -7,8 +7,10 @@ import {
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { v7 as uuidv7 } from 'uuid';
-import type { EntityId } from '../../../common/types/entity-id.type';
+import {
+  createUuidV7,
+  type EntityId,
+} from '../../../common/types/entity-id.type';
 
 export abstract class BaseEntity {
   @PrimaryColumn('uuid')
@@ -30,7 +32,7 @@ export abstract class BaseEntity {
   @BeforeInsert()
   assignId(): void {
     if (!this.id) {
-      this.id = uuidv7();
+      this.id = createUuidV7();
     }
   }
 }
