@@ -40,24 +40,47 @@ erDiagram
   Brand ||--o{ Model : possui
   Model ||--o{ Vehicle : possui
   User ||--o{ Brand : cria
+  User ||--o{ Model : cria
+  User ||--o{ Vehicle : cria
   Brand {
-    uuid id
+    uuid_v7 id
     string name
+    datetime createdAt
+    datetime updatedAt
+    uuid_v7 createdBy
   }
   Model {
-    uuid id
+    uuid_v7 id
     string name
-    uuid brandId
+    uuid_v7 brandId
+    datetime createdAt
+    datetime updatedAt
+    uuid_v7 createdBy
   }
   Vehicle {
-    uuid id
+    uuid_v7 id
     string licensePlate
     string chassis
     string renavam
     int year
-    uuid modelId
+    uuid_v7 modelId
+    datetime createdAt
+    datetime updatedAt
+    uuid_v7 createdBy
+  }
+  User {
+    uuid_v7 id
+    string nickname
+    string name
+    string email
+    string role
+    datetime createdAt
+    datetime updatedAt
+    uuid_v7 createdBy
   }
 ```
+
+Todas as entidades de domínio estendem [`BaseEntity`](src/modules/bases/entities/base.entity.ts) (`id`, `createdAt`, `updatedAt`, `createdBy`). Os identificadores são **UUID v7** (version nibble `7`, ordenáveis por tempo), gerados automaticamente no insert e validados em path params e DTOs. UUID v4 ou formatos inválidos retornam **400**. Exemplo válido: `018f1234-5678-7890-abcd-ef1234567890`.
 
 **Regras principais:**
 
@@ -65,6 +88,9 @@ erDiagram
 - Não é possível excluir uma marca que ainda possui modelos (`409`)
 - Não é possível excluir um model que ainda possui veículos (`409`)
 - Placa, chassi e RENAVAM de veículos são únicos no sistema
+- **Placa:** formato legado (`ABC1234`) ou Mercosul (`ABC1D23`)
+- **Chassi/VIN:** 17 caracteres alfanuméricos
+- **RENAVAM:** 11 dígitos numéricos
 
 ---
 
@@ -88,7 +114,7 @@ SQL Server persiste a frota; Redis acelera consultas de veículos; RabbitMQ publ
 
 ## Comece em 5 minutos
 
-**Pré-requisitos:** Node.js 18+, Yarn e Docker com Docker Compose.
+**Pré-requisitos:** Node.js 24+ (mesma versão do [Dockerfile](Dockerfile)), Yarn e Docker com Docker Compose.
 
 ### 1. Configure o ambiente
 
@@ -105,7 +131,7 @@ O `.env.example` já traz valores padrão para rodar com Docker (SQL Server, Red
 yarn docker:up
 ```
 
-Esse comando sobe **API + SQL Server + Redis + RabbitMQ + MongoDB**. O entrypoint da API ([`scripts/docker-entrypoint.sh`](scripts/docker-entrypoint.sh)) aguarda os serviços, aplica migrations e executa o seed antes de iniciar o NestJS.
+Esse comando sobe **API + SQL Server + Redis + RabbitMQ + MongoDB**. O entrypoint da API ([`scripts/docker-entrypoint.sh`](scripts/docker-entrypoint.sh)) aguarda os serviços, cria o banco (`db:create`), aplica migrations e executa o seed antes de iniciar o NestJS.
 
 Aguarde a mensagem **"Nest application successfully started"** nos logs.
 
@@ -118,6 +144,7 @@ Para parar: `yarn docker:down`.
 | API (prefixo REST) | http://localhost:4000/api/v1 |
 | Swagger UI | http://localhost:4000/api/docs |
 | RabbitMQ Management | http://localhost:15672 (guest / guest) |
+| MongoDB | mongodb://localhost:27017 |
 
 > Em `NODE_ENV=production`, o Swagger **não é exposto**.
 
@@ -138,7 +165,7 @@ O seed também carrega marcas, modelos e veículos de demonstração a partir de
 
 ## Tutorial: primeiro fluxo na API
 
-Este passo a passo usa o **Swagger** em http://localhost:4000/api/docs. O mesmo fluxo funciona com curl ou qualquer cliente HTTP.
+Este passo a passo usa o **Swagger** em http://localhost:4000/api/docs. O mesmo fluxo funciona com curl, as coleções em [`api-client/`](api-client/) (Postman e Insomnia) ou qualquer cliente HTTP.
 
 ### Passo 1 — Login
 
@@ -197,7 +224,7 @@ Listagens usam paginação no formato **connection**:
 ```json
 {
   "name": "Corolla XEi",
-  "brandId": "<uuid-da-marca-toyota>"
+  "brandId": "018f1234-5678-7890-abcd-ef1234567890"
 }
 ```
 
@@ -225,7 +252,7 @@ Resposta de item único:
   "chassis": "9BWZZZ377VT004251",
   "renavam": "12345678901",
   "year": 2024,
-  "modelId": "<uuid-do-model-criado>"
+  "modelId": "018f1234-5678-7890-abcd-ef1234567890"
 }
 ```
 
@@ -245,6 +272,16 @@ Todas as rotas exigem JWT, **exceto** `POST /auth/login` (pública, com rate lim
 | `operator` | CRUD de frota **exceto** DELETE; `GET /users/me` |
 
 O login possui limite de tentativas configurável via `THROTTLE_LOGIN_TTL` e `THROTTLE_LOGIN_LIMIT`.
+
+O login emite `accessToken` e `refreshToken`, mas **não há endpoint de refresh** — o cliente deve descartar ambos os tokens no logout (`POST /auth/logout`).
+
+---
+
+## Convenções da API
+
+- **Envelope de resposta:** item único em `{ data: { chaveRecurso: ... } }`; listagens em `{ data: { chaveRecurso: { nodes, pageInfo, totalCount } } }` (formato connection).
+- **Paginação:** query params `first` (padrão 25, máx. 100) e `skip` (padrão 0).
+- **Includes:** models e veículos aceitam `includeBrand=true` (e equivalentes) para aninhar relações; em GET de veículos, includes ou filtros customizados **desativam** o cache Redis.
 
 ---
 
@@ -318,7 +355,7 @@ Variáveis de ambiente completas: [`.env.example`](.env.example).
 | `yarn test:e2e` | HTTP com mocks, sem Docker |
 | `yarn test` | Unitários + e2e |
 | `yarn test:integration` | AppModule real com SQL Server e Redis |
-| `yarn test:cov` | Cobertura (mínimo 80% lines/statements) |
+| `yarn test:cov` | Cobertura unitária (mín. 80% lines/statements/functions, 70% branches) |
 | `yarn check` | Biome (lint + format) |
 | `yarn check:fix` | Corrige formatação/lint quando possível |
 
@@ -336,6 +373,13 @@ docker compose up sqlserver redis rabbitmq mongodb -d
 ```
 
 Ajuste no `.env`: `DB_HOST`, `REDIS_HOST`, `RABBITMQ_URL` e `MONGODB_URI` apontando para `localhost`.
+
+```bash
+yarn db:create
+yarn migration:run
+yarn seed
+yarn start:dev
+```
 
 Os testes de integração forçam `DB_HOST=localhost` e `REDIS_HOST=localhost`, mesmo que o `.env` use hostnames Docker. Se a infra não estiver acessível, a suíte é **ignorada** (exit 0).
 
@@ -358,10 +402,17 @@ yarn test
 
 | Script | Descrição |
 |--------|-----------|
+| `yarn validate:env` | Valida variáveis de ambiente (roda antes de `start` / `start:dev`) |
 | `yarn start` / `yarn start:dev` | API (valida `.env` antes) |
+| `yarn build` | Build de produção (`dist/`) |
+| `yarn db:create` | Cria banco SQL Server se ainda não existir |
 | `yarn migration:run` | Aplica migrations TypeORM |
 | `yarn migration:revert` | Reverte última migration |
+| `yarn migration:generate` | Gera migration a partir das entidades |
 | `yarn seed` | Usuário admin + frota mock |
+| `yarn test:watch` | Testes unitários em modo watch |
+| `yarn test:debug` | Testes unitários com inspector Node |
+| `yarn test:e2e:docker` | Alias de `yarn test:integration` |
 | `yarn docker:up` / `yarn docker:down` | Sobe / para stack Docker completa |
 
 ---
@@ -376,13 +427,25 @@ src/modules/
   vehicles/      # CRUD de veículos, cache Redis, publisher RabbitMQ
   users/         # CRUD de usuários
   audit/         # Interceptor HTTP, fila RabbitMQ, persistência MongoDB
-src/database/    # Migrations, seeds, mock JSON
-src/common/      # Filtros, validators, DTOs compartilhados
-src/config/      # env, database, cache, swagger
+  bases/         # BaseEntity + BaseResponseDto (id UUID v7, timestamps, createdBy)
+src/database/    # Migrations, seeds, create-database, mock JSON
+src/common/
+  decorators/    # @Public, @Roles, @CurrentUser
+  filters/       # HttpExceptionFilter
+  pipes/         # ParseUuidV7Pipe
+  validators/    # UUID v7, placa/chassi/RENAVAM, email, senha
+  swagger/       # exemplos OpenAPI, schemas de erro
+  dto/           # paginação, pageInfo
+  utils/         # envelope de resposta (connection)
+src/config/      # app, database, typeorm, cache, swagger, env-validation
+scripts/         # validate-env.ts, docker-entrypoint.sh
 test/e2e/        # Testes e2e com mocks (HTTP, sem Docker)
 test/integration/# Testes com SQL Server + Redis (AppModule real)
+test/common/     # helpers compartilhados (setup, fixtures de app)
 test/fixtures/   # Dados/factories para testes
+api-client/      # Coleções Postman e Insomnia
 docker-compose.yml
+Dockerfile
 ```
 
 ---
