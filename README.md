@@ -165,7 +165,7 @@ O seed também carrega marcas, modelos e veículos de demonstração a partir de
 
 ## Tutorial: primeiro fluxo na API
 
-Este passo a passo usa o **Swagger** em http://localhost:4000/api/docs. O mesmo fluxo funciona com curl, as coleções em [`api-client/`](api-client/) (Postman e Insomnia) ou qualquer cliente HTTP.
+Este passo a passo usa o **Swagger** em http://localhost:4000/api/docs. O mesmo fluxo funciona com curl ou qualquer cliente HTTP.
 
 ### Passo 1 — Login
 
@@ -443,7 +443,6 @@ test/e2e/        # Testes e2e com mocks (HTTP, sem Docker)
 test/integration/# Testes com SQL Server + Redis (AppModule real)
 test/common/     # helpers compartilhados (setup, fixtures de app)
 test/fixtures/   # Dados/factories para testes
-api-client/      # Coleções Postman e Insomnia
 docker-compose.yml
 Dockerfile
 ```
