@@ -7,6 +7,7 @@ export const MAX_PAGE_SIZE = 100;
 
 export class PaginationQueryDto {
   @ApiPropertyOptional({
+    type: Number,
     description: 'Maximum number of items to return',
     default: DEFAULT_PAGE_SIZE,
     minimum: 1,
@@ -21,6 +22,7 @@ export class PaginationQueryDto {
   first = DEFAULT_PAGE_SIZE;
 
   @ApiPropertyOptional({
+    type: Number,
     description: 'Number of items to skip (offset)',
     default: 0,
     minimum: 0,

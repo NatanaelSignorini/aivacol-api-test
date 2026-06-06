@@ -21,6 +21,7 @@ const toOptionalBoolean = (value: unknown): boolean | undefined => {
 
 export class ModelsIncludeQueryDto {
   @ApiPropertyOptional({
+    type: Boolean,
     description:
       'Include nested brand with all fields (same as GET /brands/:id)',
     example: true,

@@ -13,6 +13,7 @@ import {
   Like,
   Repository,
 } from 'typeorm';
+import { ConditionalCache } from '../../common/decorators/conditional-cache.decorator';
 import { DEFAULT_PAGE_SIZE } from '../../common/dto/pagination-query.dto';
 import type { Connection } from '../../common/interfaces/connection.interface';
 import type { EntityId } from '../../common/types/entity-id.type';
@@ -101,21 +102,20 @@ export class VehiclesService {
    * Lista veículos com filtros, paginação e includes opcionais.
    * Usa cache Redis apenas na consulta padrão (sem filtros/includes/paginação customizada).
    */
+  @ConditionalCache({
+    shouldCache: function (
+      this: VehiclesService,
+      query: VehiclesListQueryDto,
+    ) {
+      const includeOptions = resolveVehicleIncludeOptions(query);
+      return this.canUseListCache(query, includeOptions);
+    },
+    cacheKey: VEHICLES_LIST_CACHE_KEY,
+  })
   async findAll(
     query: VehiclesListQueryDto,
   ): Promise<Connection<VehicleResponseDto>> {
     const includeOptions = resolveVehicleIncludeOptions(query);
-
-    if (this.canUseListCache(query, includeOptions)) {
-      const cached = await this.cacheManager.get<
-        Connection<VehicleResponseDto>
-      >(VEHICLES_LIST_CACHE_KEY);
-
-      if (cached) {
-        return cached;
-      }
-    }
-
     const where = this.buildListWhere(query);
     const [vehicles, totalCount] = await this.vehiclesRepository.findAndCount({
       where,
@@ -125,17 +125,11 @@ export class VehiclesService {
       take: query.first,
     });
 
-    const connection = toConnection(
+    return toConnection(
       vehicles.map((vehicle) => this.toResponse(vehicle, includeOptions)),
       totalCount,
       query.skip,
     );
-
-    if (this.canUseListCache(query, includeOptions)) {
-      await this.cacheManager.set(VEHICLES_LIST_CACHE_KEY, connection);
-    }
-
-    return connection;
   }
 
   /** Indica se a listagem padrão (sem filtros/includes) pode ser servida pelo cache Redis. */
@@ -186,27 +180,21 @@ export class VehiclesService {
    * Busca veículo por id com includes opcionais.
    * Cacheia resposta por id quando não há includes de model/brand.
    */
+  @ConditionalCache({
+    shouldCache: function (
+      this: VehiclesService,
+      _id: EntityId,
+      includeQuery: VehiclesIncludeQueryDto = {},
+    ) {
+      return this.canUseItemCache(resolveVehicleIncludeOptions(includeQuery));
+    },
+    cacheKey: (id: EntityId) => vehicleByIdCacheKey(id),
+  })
   async findOne(
     id: EntityId,
     includeQuery: VehiclesIncludeQueryDto = {},
   ): Promise<VehicleResponseDto> {
     const includeOptions = resolveVehicleIncludeOptions(includeQuery);
-
-    if (this.canUseItemCache(includeOptions)) {
-      const cacheKey = vehicleByIdCacheKey(id);
-      const cached = await this.cacheManager.get<VehicleResponseDto>(cacheKey);
-
-      if (cached) {
-        return cached;
-      }
-
-      const vehicle = await this.findEntityOrFail(id, includeOptions);
-      const response = this.toResponse(vehicle, includeOptions);
-      await this.cacheManager.set(cacheKey, response);
-
-      return response;
-    }
-
     const vehicle = await this.findEntityOrFail(id, includeOptions);
 
     return this.toResponse(vehicle, includeOptions);

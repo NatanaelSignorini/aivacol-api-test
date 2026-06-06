@@ -21,7 +21,7 @@ class VehiclesListFiltersDto {
   @IsUuidV7Field({ optional: true })
   brandId?: EntityId;
 
-  @ApiPropertyOptional({ example: 2024 })
+  @ApiPropertyOptional({ type: Number, example: 2024 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
